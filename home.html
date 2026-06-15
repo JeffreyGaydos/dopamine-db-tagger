@@ -1,0 +1,30 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="home.css">
+        <script src="home.js"></script>
+    </head>
+    <body>
+        <div class="two-col-parent">
+            <div class="two-col-child">
+                <h2>Dopamine Tag System</h2>
+                <form>
+                    <select id="tag-sequence">
+                        <option value="-1" disabled selected style="display: none">Choose a way to tag...</option>
+                        <option value="Folder">Folder by Folder</option>
+                        <option value="Track">Track by Track</option>
+                        <option value="RandomFolder">Random by Folder</option>
+                        <option value="RandomTrack">Random by Folder</option>
+                        <option value="SpecificFolder">Specific Folder</option>
+                        <option value="SpecificTrack">Specific Track</option>
+                    </select>
+                    <p class="revealable">Since you chose <span id="tag-sequence-type"></span>, choose a <span id="revealable-incremental">starting point</span><span id="revealable-specific">valid track to start at</span>:</p>
+                    <input id="numeric-start" type="number" value="0">
+                    <input id="text-start" type="text" value="TEMP - Should show the first track available and be an auto complete. Will use full filename with extension">
+                </form>
+            </div>
+            <div class="two-col-child">
+                <h2>All Tags:</h2>
+            </div>
+        </div>
+    </body>
+</html>
