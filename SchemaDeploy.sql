@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS Tags
+(
+    TagName TEXT,
+    CreatedDate DATE DEFAULT(CURRENT_TIMESTAMP),
+    PRIMARY KEY(TagName)
+);
+
+
+CREATE TABLE IF NOT EXISTS TaggedTracks
+(
+    TagName TEXT,
+    TrackID INTEGER,
+    CreatedDate DATE DEFAULT(CURRENT_TIMESTAMP),
+    FOREIGN KEY(TagName) REFERENCES Tags(TagName)
+);

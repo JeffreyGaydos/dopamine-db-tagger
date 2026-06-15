@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS TaggedTracks;
+
+DROP TABLE IF EXISTS Tags;
