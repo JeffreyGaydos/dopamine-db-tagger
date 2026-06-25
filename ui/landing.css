@@ -1,0 +1,10 @@
+#artist-list {
+    margin-left: 50px;
+
+    details:nth-child(odd) summary {
+        background-color: #EEE;
+    }
+    details:nth-child(even) summary {
+        background-color: #DDD;
+    }
+}

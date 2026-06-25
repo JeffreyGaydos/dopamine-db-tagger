@@ -1,0 +1,41 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="../shared.css">
+        <link rel="stylesheet" href="../tagging.css">
+        <script src="../tagging.js"></script>
+    </head>
+    <body>
+        <h2>Tagging</h2>
+        <h3><span title="Track Title" id="track-name">Track Name</span> - <span title="Artist" id="track-artist">Artist</span> (<span title="Album" id="track-album">Album</span>)</h3>
+        <div class="media-box">
+            <div class="play-box">
+                <svg id="rewind" xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="currentColor" class="bi bi-rewind-circle-fill" viewBox="0 0 16 16">
+                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16M7.729 5.055A.5.5 0 0 1 8 5.5v1.886l3.21-2.293A.5.5 0 0 1 12 5.5v5a.5.5 0 0 1-.79.407L8 8.614V10.5a.5.5 0 0 1-.79.407l-3.5-2.5a.5.5 0 0 1 0-.814l3.5-2.5a.5.5 0 0 1 .519-.038"/>
+                </svg>
+                <svg id="play" xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-play-circle-fill" viewBox="0 0 16 16">
+                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M6.79 5.093A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814z"/>
+                </svg>
+                <svg id="fastfoward" xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="currentColor" class="bi bi-fast-forward-circle-fill" viewBox="0 0 16 16">
+                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16M4.79 5.093 8 7.386V5.5a.5.5 0 0 1 .79-.407l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 8 10.5V8.614l-3.21 2.293A.5.5 0 0 1 4 10.5v-5a.5.5 0 0 1 .79-.407"/>
+                </svg>
+            </div>
+            <input class="time-bar" type="range" min="0" max="300" value="0" />
+        </div>
+        <form>
+            <button>Previous Track</button>
+            <input id="tag" type="text" placeholder="New or existing tag"/>
+            <label for="is-artist">Is Artist Tag:</label>
+            <input id="is-artist" type="checkbox"/>
+            <input id="color" type="color"/>
+            <button>Next Track</button>
+        </form>
+        <h2>Current Tags on this Track</h2>
+        <p>Tags outlined in red are artist tags. Deleting or editing those tags will result in changes to multiple tracks.</p>
+        <div class="current-tags-box">
+            <div class="tag">Morning<button>&Cross;</button></div>
+            <div class="tag" style="background-color: black;">Evening<button>&Cross;</button></div>
+            <div class="tag" style="background-color: darkgreen;">Upbeat<button>&Cross;</button></div>
+            <div class="tag a" style="background-color: purple;">Slow<button>&Cross;</button></div>
+        </div>
+    </body>
+</html>

@@ -17,3 +17,7 @@ body {
     border-left: 1px solid red;
     height: calc(100dvh - 10px);
 }
+
+iframe {
+    display: none;
+}

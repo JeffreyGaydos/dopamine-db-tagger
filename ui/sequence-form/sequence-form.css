@@ -1,0 +1,7 @@
+p {
+    color: red !important;
+}
+
+.revealable {
+    display: none;
+}

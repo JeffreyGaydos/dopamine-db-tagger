@@ -1,0 +1,64 @@
+.play-box {
+    display: flex;
+    margin: auto;
+    transition: all 0.2s ease;
+    justify-content: center;
+
+    svg {
+        transition: all 0.2s ease;
+    }
+
+    svg:first-child, svg:last-child {
+        margin-block: auto;
+        margin-inline: 20px;
+    }
+
+    svg:hover {
+        transform: scale(1.1);
+    }
+}
+
+.time-bar {
+    width: 100%;
+}
+
+.media-box {
+    max-width: 500px;
+}
+
+input {
+    margin-inline: 10px;
+}
+
+label ~ input {
+    margin-left: 0;
+}
+
+.tag {
+    border-radius: 5px;
+    height: 20px;
+    width: min-content;
+    background-color: blue;
+    color: white;
+    font-weight: 600;
+    padding: 5px 10px;
+    margin: 5px;
+    display: inline-flex;
+
+    button {
+        padding: 0;
+        margin-left: 10px;
+        font-size: 20px;
+        color: white;
+        font-weight: 600;
+        margin-top: -3.5px;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+    }
+}
+
+.tag.a {
+    outline: 2px solid var(--title-color);
+    border: 2px solid white;
+}

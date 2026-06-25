@@ -2,13 +2,17 @@ import Install from './install.js'
 import Uninstall from './uninstall.js';
 import http from 'node:http';
 import fs from 'node:fs';
+import sqlite3 from 'sqlite3'
+import { open } from 'sqlite'
+import { BasicGetFile, GetConfigJSON } from './utilities.js';
 
 const hostname = '127.0.0.1';
-const port = 3000;
+const port = 8080;
 
 const server = http.createServer((req, res) => {
   fs.readFile('./' + req.url, function(err, data) {
-        if (!err) {
+    routeEndpoints(req.url).then(apiData => {
+        if (!err || apiData) {
             var dotoffset = req.url.lastIndexOf('.');
             var mimetype = dotoffset == -1
                             ? 'text/plain'
@@ -23,7 +27,19 @@ const server = http.createServer((req, res) => {
                                 '.json' :  'text/javascript'
                                 }[ req.url.substr(dotoffset) ];
             mimetype = mimetype ?? 'text/plain';
+            mimetype = !!apiData ? 'text/html' : mimetype;
             res.setHeader('Content-type' , mimetype);
+            data ??= "";
+            data += apiData;
+            if(mimetype === 'text/html') { //micro-react situation
+                data = String(data).replaceAll('<C src="', '<iframe src="');
+                data = data.replaceAll('"></C>', '" onload="(() => { try { TrackIframeLoad(); } catch {} })()"></iframe>');
+                if(!req.url?.includes("/home.html")) {
+                    data = "<div component>" + data + "</div>";
+                } else {
+                    data = data + '<script src="component-backend.js"></script>';
+                }
+            }
             res.end(data);
             console.log( req.url, mimetype);
         } else {
@@ -32,12 +48,80 @@ const server = http.createServer((req, res) => {
             res.end();
         }
     });
+  });
 });
+
+async function routeEndpoints(url) {
+    const config = await GetConfigJSON();
+
+    const db = await open({
+        filename: config.DatabaseLocation,
+        driver: sqlite3.Database
+    });
+
+    if(url == "/ui/landing.html") {
+        console.log("Querying...");
+        const result = await db.all(`
+            SELECT DISTINCT
+                coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists) AS ArtistsRaw,
+                coalesce(iif(TrackTitle = '', FileName, TrackTitle), FileName) AS TitleRaw,
+                TrackID
+            FROM Track
+            ORDER BY
+                coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists),
+                coalesce(iif(TrackTitle = '', FileName, TrackTitle), FileName)
+        `);
+        /**
+         * [
+         *      {
+         *          "ArtistsRaw": "Adam Skorupa & Krzysztof Wiezynkiewicz"
+         *          "Tracks": [
+         *              {
+         *                  "TrackID": 1,
+         *                  "TitleRaw": "The scent of battle"
+         *              },
+         *              {
+         *                  "TrackID": 2,
+         *                  "TitleRaw": "The sewers"
+         *              }
+         *          ]
+         *      }
+         * ]
+         */
+        const groupedArtists = [];
+        result.forEach(r => {
+            const safeArtist = r.ArtistsRaw == "" ? "Unknown Artist" : r.ArtistsRaw;
+            if(groupedArtists.filter(g => g.ArtistsRaw === safeArtist).length === 0) {
+                groupedArtists.push({
+                    ArtistsRaw: safeArtist,
+                    Tracks: []
+                });
+            }
+
+            groupedArtists.filter(g => g.ArtistsRaw === safeArtist)[0].Tracks.push({
+                TrackID: r.TrackID,
+                TitleRaw: r.TitleRaw
+            });
+        });
+
+        return `<div id="response" style="display: none">${JSON.stringify(groupedArtists)}</div>`;
+    }
+    if(url.match(/\/ui\/tagging\/[1-9]+[0-9]*/)) {
+        const trackString = url.match(/(?<=\/ui\/tagging\/)[1-9]+[0-9]*/)[0];
+        const baseHtml = await BasicGetFile('./ui/tagging.html');
+        console.log("Querying...");
+        const result = await db.all(`
+             SELECT * FROM Track WHERE TrackID = $t
+        `, { $t: trackString });
+
+        return `${baseHtml}<div id="response" style="display: none">${JSON.stringify(result)}</div>`;
+    }
+}
 
 server.listen(port, hostname, () => {
   console.log(`Server running at http://${hostname}:${port}/`);
 });
 
 (async () => {
-    
+    // await Install();
 })();
