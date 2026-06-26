@@ -5,11 +5,55 @@ import fs from 'node:fs';
 import sqlite3 from 'sqlite3'
 import { open } from 'sqlite'
 import { BasicGetFile, GetConfigJSON } from './utilities.js';
+import { chdir, cwd } from 'node:process';
 
 const hostname = '127.0.0.1';
 const port = 8080;
 
 const server = http.createServer((req, res) => {
+  if(req.url.includes(".flac") || req.url.includes(".mp3")) {
+    chdir("F:/Music/"); //Probably not necessary since we use absolute path below without issue
+    console.log(cwd());
+    console.log(req.url);
+    fs.readFile("F:\\Music" + req.url.replaceAll("%20", " "), function(err, data) {
+        if (!err) {
+            var dotoffset = req.url.lastIndexOf('.');
+            var mimetype = dotoffset == -1
+                            ? 'text/plain'
+                            : {
+                                '.html' : 'text/html',
+                                '.ico' : 'image/x-icon',
+                                '.jpg' : 'image/jpeg',
+                                '.png' : 'image/png',
+                                '.gif' : 'image/gif',
+                                '.css' : 'text/css',
+                                '.js' : 'text/javascript',
+                                '.json' :  'text/javascript',
+                                '.mp3' : 'audio/mpeg',
+                                '.ogg' : 'audio/ogg',
+                                '.wav' : 'audio/wav',
+                                '.aac' : 'audio/aac',
+                                '.webm' : 'audio/webm',
+                                '.flac' : 'audio/flac'
+                                }[ req.url.substr(dotoffset) ];
+            mimetype = mimetype ?? 'text/plain';
+            res.setHeader('Content-type' , mimetype);
+            if(data) {
+                console.log("Size: " + data.byteLength + 1 + " | " + mimetype);
+                res.setHeader('Content-length', data.byteLength + 1);
+            }
+            res.end(data);
+            chdir("F:/Github Repositories/dopamine-db-tagger");
+            console.log(cwd());
+            console.log( req.url, mimetype);
+        } else {
+            console.log ('file not found: ' + 'F:/Music' + req.url);
+            res.writeHead(404, "Not Found");
+            res.end();
+        }
+  });
+  } else {
+
   fs.readFile('./' + req.url, function(err, data) {
     routeEndpoints(req.url).then(apiData => {
         if (!err || apiData) {
@@ -24,31 +68,46 @@ const server = http.createServer((req, res) => {
                                 '.gif' : 'image/gif',
                                 '.css' : 'text/css',
                                 '.js' : 'text/javascript',
-                                '.json' :  'text/javascript'
+                                '.json' :  'text/javascript',
+                                '.mp3' : 'audio/mpeg',
+                                '.ogg' : 'audio/ogg',
+                                '.wav' : 'audio/wav',
+                                '.aac' : 'audio/aac',
+                                '.webm' : 'audio/webm',
+                                '.flac' : 'audio/flac'
                                 }[ req.url.substr(dotoffset) ];
             mimetype = mimetype ?? 'text/plain';
             mimetype = !!apiData ? 'text/html' : mimetype;
             res.setHeader('Content-type' , mimetype);
-            data ??= "";
-            data += apiData;
-            if(mimetype === 'text/html') { //micro-react situation
-                data = String(data).replaceAll('<C src="', '<iframe src="');
-                data = data.replaceAll('"></C>', '" onload="(() => { try { TrackIframeLoad(); } catch {} })()"></iframe>');
-                if(!req.url?.includes("/home.html")) {
-                    data = "<div component>" + data + "</div>";
-                } else {
-                    data = data + '<script src="component-backend.js"></script>';
+            if(data) {
+                // console.log("Size: " + data.byteLength + 1 + " | " + mimetype);
+                res.setHeader('Content-length', data.byteLength + 1);
+            }
+            if(mimetype.includes("audio")) {
+                
+            } else {
+                data ??= "";
+                data += apiData;
+                if(mimetype === 'text/html') { //micro-react situation
+                    data = String(data).replaceAll('<C src="', '<iframe src="');
+                    data = data.replaceAll('"></C>', '" onload="(() => { try { TrackIframeLoad(); } catch {} })()"></iframe>');
+                    if(!req.url?.includes("/home.html")) {
+                        data = "<div component>" + data + "</div>";
+                    } else {
+                        data = data + '<script src="component-backend.js"></script>';
+                    }
                 }
             }
             res.end(data);
-            console.log( req.url, mimetype);
+            // console.log( req.url, mimetype);
         } else {
-            console.log ('file not found: ' + req.url);
+            // console.log ('file not found: ' + req.url);
             res.writeHead(404, "Not Found");
             res.end();
         }
     });
   });
+}
 });
 
 async function routeEndpoints(url) {
@@ -108,11 +167,17 @@ async function routeEndpoints(url) {
     }
     if(url.match(/\/ui\/tagging\/[1-9]+[0-9]*/)) {
         const trackString = url.match(/(?<=\/ui\/tagging\/)[1-9]+[0-9]*/)[0];
-        const baseHtml = await BasicGetFile('./ui/tagging.html');
+        let baseHtml = await BasicGetFile('./ui/tagging.html');
         console.log("Querying...");
         const result = await db.all(`
              SELECT * FROM Track WHERE TrackID = $t
         `, { $t: trackString });
+
+        let actualPath = result[0].Path;
+        actualPath = actualPath.replaceAll(/\s/g, "%20");
+        actualPath = actualPath.replaceAll(/F:[\/\\]Music[\/\\]/g, "");
+        actualPath = "../../" + actualPath;
+        baseHtml = baseHtml.replace("$$$PATH$$$", actualPath);
 
         return `${baseHtml}<div id="response" style="display: none">${JSON.stringify(result)}</div>`;
     }
