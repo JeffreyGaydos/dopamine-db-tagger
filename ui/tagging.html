@@ -15,20 +15,6 @@
             </svg>
         </a>Tagging</h2>
         <h3><span title="Track Title" id="track-name">Track Name</span> - <span title="Artist" id="track-artist">Artist</span> (<span title="Album" id="track-album">Album</span>)</h3>
-        <!-- <div class="media-box">
-            <div class="play-box">
-                <svg id="rewind" xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="currentColor" class="bi bi-rewind-circle-fill" viewBox="0 0 16 16">
-                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16M7.729 5.055A.5.5 0 0 1 8 5.5v1.886l3.21-2.293A.5.5 0 0 1 12 5.5v5a.5.5 0 0 1-.79.407L8 8.614V10.5a.5.5 0 0 1-.79.407l-3.5-2.5a.5.5 0 0 1 0-.814l3.5-2.5a.5.5 0 0 1 .519-.038"/>
-                </svg>
-                <svg id="play" xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-play-circle-fill" viewBox="0 0 16 16">
-                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M6.79 5.093A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814z"/>
-                </svg>
-                <svg id="fastfoward" xmlns="http://www.w3.org/2000/svg" width="45" height="45" fill="currentColor" class="bi bi-fast-forward-circle-fill" viewBox="0 0 16 16">
-                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16M4.79 5.093 8 7.386V5.5a.5.5 0 0 1 .79-.407l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 8 10.5V8.614l-3.21 2.293A.5.5 0 0 1 4 10.5v-5a.5.5 0 0 1 .79-.407"/>
-                </svg>
-            </div>
-            <input class="time-bar" type="range" min="0" max="300" value="0" />
-        </div> -->
         <audio controls autoplay>
             <source id="audio-path" src="$$$PATH$$$" type="audio/mpeg">
             Your browser does not support the audio element.
@@ -48,6 +34,9 @@
                 <path d="M15.5 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V8.753l-6.267 3.636c-.54.313-1.233-.066-1.233-.697v-2.94l-6.267 3.636C.693 12.703 0 12.324 0 11.693V4.308c0-.63.693-1.01 1.233-.696L7.5 7.248v-2.94c0-.63.693-1.01 1.233-.696L15 7.248V4a.5.5 0 0 1 .5-.5"/>
                 </svg>
             </a>
+            <br/>
+            <br/>
+            <button>Add Tag (Or Press Shift+Enter)</button>
         </form>
         <h2>Current Tags on this Track</h2>
         <p>Tags outlined in red are artist tags. Deleting or editing those tags will result in changes to multiple tracks.</p>
@@ -56,7 +45,7 @@
         </div>
         <div id="right-pane">
             <h2>All Existing Tags</h2>
-            <p>Click on any of these tags to add them to the current track rather than manually typing them in.</p>
+            <p>Click on any of these tags to add them to the current track rather than manually typing them in. Tags already present on the current track will be grayed out / disabled.</p>
             <div id="all-tags-box"></div>
         </div>
         </div>
