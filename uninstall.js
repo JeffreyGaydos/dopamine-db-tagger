@@ -1,10 +1,10 @@
 import sqlite3 from 'sqlite3'
 import { open } from 'sqlite'
-import { BasicGetFile, GetConfigJSON } from './utilities.js';
+import { BasicGetFile, GetConfigJSONCached } from './utilities.js';
 
 export default async function Uninstall() {
     (async () => {
-        const config = await GetConfigJSON();
+        const config = await GetConfigJSONCached();
 
         const db = await open({
             filename: config.DatabaseLocation,
