@@ -43,6 +43,7 @@ export function GetMimeTypeFromURI(reqUrl) {
         '.js' : 'text/javascript',
         '.json' : 'text/javascript',
         '.mp3' : 'audio/mpeg',
+        '.m4a' : 'audio/mpeg',
         '.ogg' : 'audio/ogg',
         '.wav' : 'audio/wav',
         '.aac' : 'audio/aac',

@@ -62,3 +62,9 @@ label ~ input {
     outline: 2px solid var(--title-color);
     border: 2px solid white;
 }
+
+a#next-track, a#previous-track {
+    border: 2px solid var(--accent-color);
+    border-radius: 5px;
+    padding: 5px 3px 0px 5px;
+}

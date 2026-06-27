@@ -51,3 +51,29 @@ export async function GetAllTrackData(trackID) {
     }
     return result[0];
 }
+
+export async function GetNextPreviousTrackID(trackID) {
+    const myDb = await GetDBCached();
+    const nextResult = await myDb.all(`
+        SELECT TrackID
+        FROM Track
+        WHERE TrackID > $t
+        ORDER BY TrackID ASC
+        LIMIT 1
+    `, { $t: trackID }
+    );
+
+    const previousResult = await myDb.all(`
+        SELECT TrackID
+        FROM Track
+        WHERE TrackID < $t
+        ORDER BY TrackID DESC
+        LIMIT 1
+    `, { $t: trackID }
+    );
+
+    return {
+        next: nextResult[0].TrackID,
+        previous: previousResult[0].TrackID,
+    }
+}

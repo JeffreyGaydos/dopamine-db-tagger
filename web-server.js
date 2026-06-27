@@ -40,9 +40,11 @@ async function RouteEndpoints(url, currentData) {
                         //Since this endpoint doesn't reference 1 page, but many, we have to grab base data
                         let baseHtml = await BasicGetFile(`./${urlBits[0]}/${urlBits[1]}.html`);
                         const taggingData = await Tagging(urlBits[2], baseHtml);
+                        const mergedApiData = taggingData.apiData
+                        mergedApiData["pageInfo"] = taggingData.pageInfo;
                         
                         return {
-                            apiData: `${taggingData.modifiedBaseHtml}${WithTypicalResponseContainer(taggingData.apiData)}`,
+                            apiData: `${taggingData.modifiedBaseHtml}${WithTypicalResponseContainer(mergedApiData)}`,
                             modified: true
                         };
                     }

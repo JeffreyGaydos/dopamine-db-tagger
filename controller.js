@@ -1,4 +1,4 @@
-import { GetAllTrackData, GetLandingLinkData } from "./db-client.js";
+import { GetAllTrackData, GetLandingLinkData, GetNextPreviousTrackID } from "./db-client.js";
 import { GetConfigJSONCached } from "./utilities.js";
 
 /**
@@ -35,11 +35,14 @@ export async function Landing() {
             TitleRaw: r.TitleRaw
         });
     });
+    return groupedArtists;
 }
 
 // To figure out what exact audio file path needs to go into the baseHTML, plus the data that needs to come after like a normal response
 export async function Tagging(trackID, baseHtml) {
     const trackData = await GetAllTrackData(trackID);
+    const pageInfo = await GetNextPreviousTrackID(trackID);
+
     let audioBasePath = (await GetConfigJSONCached()).BaseFolderPath;
     
     let audioHtmlPath = trackData.Path;
@@ -53,6 +56,7 @@ export async function Tagging(trackID, baseHtml) {
     
     return {
         modifiedBaseHtml: baseHtml,
-        apiData: trackData
+        apiData: trackData,
+        pageInfo: pageInfo
     };
 }

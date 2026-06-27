@@ -2,6 +2,7 @@ window.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#tag").focus();
     var responseJson = JSON.parse(document.querySelector("#response").innerHTML);
     RenderMetadata(responseJson);
+    AddHandlers(responseJson);
 });
 
 function RenderMetadata(json) {
@@ -27,6 +28,8 @@ function RenderMetadata(json) {
     document.querySelector("#track-name").innerText = normalizedTitle
     document.querySelector("#track-artist").innerText = normalizedArtist
     document.querySelector("#track-album").innerText = normalizedAlbum;
+
+    document.querySelector("title").innerText += `${normalizedTitle} | ${normalizedArtist} | ${normalizedAlbum}`;
 }
 
 function ReturnIfExistsAndNotSet(normalized, rawData) {
@@ -34,4 +37,9 @@ function ReturnIfExistsAndNotSet(normalized, rawData) {
     if(rawData) {
         return rawData;
     }
+}
+
+function AddHandlers(json) {
+    document.querySelector("#previous-track").href = `./${json.pageInfo.previous}`;
+    document.querySelector("#next-track").href = `./${json.pageInfo.next}`;
 }
