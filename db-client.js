@@ -97,3 +97,32 @@ export async function GetAllTagsForTrack(trackID) {
 
     return allTagResult;
 }
+
+export async function SearchTracks(stringQuery) {
+    const myDb = await GetDBCached();
+    return await myDb.all(`
+        SELECT
+            TrackID,
+            coalesce(iif(TrackTitle = '', FileName, TrackTitle), FileName) AS TitleRaw,
+            coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists) AS ArtistsRaw
+        FROM Track
+        WHERE TrackID = $s
+        UNION
+        SELECT
+            TrackID,
+            coalesce(iif(TrackTitle = '', FileName, TrackTitle), FileName) AS TitleRaw,
+            coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists) AS ArtistsRaw
+        FROM Track
+        WHERE TrackTitle = $s
+        OR FileName = $s
+        UNION
+        SELECT
+            TrackID,
+            coalesce(iif(TrackTitle = '', FileName, TrackTitle), FileName) AS TitleRaw,
+            coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists) AS ArtistsRaw
+        FROM Track
+        WHERE TrackTitle LIKE CONCAT('%', $s, '%')
+        OR Path LIKE CONCAT('%', $s, '%')
+    `, { $s: stringQuery }
+    );
+}

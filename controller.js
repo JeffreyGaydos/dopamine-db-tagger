@@ -1,4 +1,4 @@
-import { GetAllTags, GetAllTagsForTrack, GetAllTrackData, GetLandingLinkData, GetNextPreviousTrackID } from "./db-client.js";
+import { GetAllTags, GetAllTagsForTrack, GetAllTrackData, GetLandingLinkData, GetNextPreviousTrackID, SearchTracks } from "./db-client.js";
 import { GetConfigJSONCached } from "./utilities.js";
 
 /**
@@ -63,4 +63,9 @@ export async function Tagging(trackID, baseHtml) {
         currentTags: currentTags,
         allTags: allTags
     };
+}
+
+export async function GetTrackSearchResults(stringQuery) {
+    const searchResults = await SearchTracks(stringQuery);
+    return searchResults;
 }
