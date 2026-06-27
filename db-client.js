@@ -77,3 +77,23 @@ export async function GetNextPreviousTrackID(trackID) {
         previous: previousResult[0].TrackID,
     }
 }
+
+export async function GetAllTags() {
+    const myDb = await GetDBCached();
+    const allTagResult = await myDb.all(`
+        SELECT TagName FROM Tags
+    `);
+
+    return allTagResult;
+}
+
+export async function GetAllTagsForTrack(trackID) {
+    const myDb = await GetDBCached();
+    const allTagResult = await myDb.all(`
+        SELECT * FROM TaggedAll
+        WHERE TrackID = $t
+    `, { $t: trackID }
+    );
+
+    return allTagResult;
+}

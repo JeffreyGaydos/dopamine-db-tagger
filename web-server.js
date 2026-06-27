@@ -42,6 +42,8 @@ async function RouteEndpoints(url, currentData) {
                         const taggingData = await Tagging(urlBits[2], baseHtml);
                         const mergedApiData = taggingData.apiData
                         mergedApiData["pageInfo"] = taggingData.pageInfo;
+                        mergedApiData["currentTags"] = taggingData.currentTags;
+                        mergedApiData["allTags"] = taggingData.allTags;
                         
                         return {
                             apiData: `${taggingData.modifiedBaseHtml}${WithTypicalResponseContainer(mergedApiData)}`,

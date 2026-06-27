@@ -1,4 +1,4 @@
-import { GetAllTrackData, GetLandingLinkData, GetNextPreviousTrackID } from "./db-client.js";
+import { GetAllTags, GetAllTagsForTrack, GetAllTrackData, GetLandingLinkData, GetNextPreviousTrackID } from "./db-client.js";
 import { GetConfigJSONCached } from "./utilities.js";
 
 /**
@@ -42,6 +42,8 @@ export async function Landing() {
 export async function Tagging(trackID, baseHtml) {
     const trackData = await GetAllTrackData(trackID);
     const pageInfo = await GetNextPreviousTrackID(trackID);
+    const currentTags = await GetAllTagsForTrack(trackID);
+    const allTags = await GetAllTags();
 
     let audioBasePath = (await GetConfigJSONCached()).BaseFolderPath;
     
@@ -57,6 +59,8 @@ export async function Tagging(trackID, baseHtml) {
     return {
         modifiedBaseHtml: baseHtml,
         apiData: trackData,
-        pageInfo: pageInfo
+        pageInfo: pageInfo,
+        currentTags: currentTags,
+        allTags: allTags
     };
 }

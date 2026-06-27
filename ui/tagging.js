@@ -3,6 +3,9 @@ window.addEventListener("DOMContentLoaded", () => {
     var responseJson = JSON.parse(document.querySelector("#response").innerHTML);
     RenderMetadata(responseJson);
     AddHandlers(responseJson);
+    console.log(responseJson.currentTags[0]);
+    responseJson.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag));
+    responseJson.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#all-tags-box"));
 });
 
 function RenderMetadata(json) {
@@ -42,4 +45,18 @@ function ReturnIfExistsAndNotSet(normalized, rawData) {
 function AddHandlers(json) {
     document.querySelector("#previous-track").href = `./${json.pageInfo.previous}`;
     document.querySelector("#next-track").href = `./${json.pageInfo.next}`;
+}
+
+function AddTagToUI(tagName, isArtist, boxSelector = "#current-tags-box") {
+    console.log(tagName);
+    console.log(isArtist);
+    const tagElement = document.createElement("DIV");
+    tagElement.classList.add("tag");
+    if(isArtist) tagElement.classList.add("a");
+    tagElement.innerText = tagName;
+    const xButton = document.createElement("BUTTON");
+    xButton.innerHTML = "&Cross;"
+    tagElement.appendChild(xButton);
+
+    document.querySelector(boxSelector).appendChild(tagElement);
 }

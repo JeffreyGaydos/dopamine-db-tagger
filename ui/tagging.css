@@ -68,3 +68,19 @@ a#next-track, a#previous-track {
     border-radius: 5px;
     padding: 5px 3px 0px 5px;
 }
+
+#parent {
+    display: flex;
+    #left-pane, #right-pane {
+        > *:first-child {
+            margin-top: 0;
+        }
+        flex: 1;
+        min-height: calc(100dvh - 16px); /*body has default styling of 8px margin*/
+    }
+
+    #right-pane {
+        border-left: 3px dashed var(--accent-color);
+        padding-left: 10px;
+    }
+}
