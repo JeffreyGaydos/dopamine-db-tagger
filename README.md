@@ -11,14 +11,14 @@ Tags are any word that you want to associate with a track. The purpose of a tag 
 
 Without a tag and a playlist generator, you'd have to add the track to both playlists manually, and you may forget which tracks you've added.
 
-With a tag and playlist generator, you can add the tag "Agressive" and create your "Workout" and "Competitive Gaming" playlists via queries similar to:
+With a tag and playlist generator, you can add the tag "Aggressive" and create your "Workout" and "Competitive Gaming" playlists via queries similar to:
 - Workout:
 ```
 SELECT TrackID
 FROM TaggedTracaks
 WHERE TagName = 'Aggressive' AND TagName = 'Rock'
 ```
-- Workout:
+- Competitive Gaming:
 ```
 SELECT TrackID
 FROM TaggedTracaks
@@ -32,7 +32,7 @@ Now, when you use the playlist generator to re-sync the playlists, both playlist
 
 You'll need to install the latest version of [Dopamine](https://github.com/digimezzo/dopamine), or you can use the one I last tested with for maximum compatibility:
 
-[Dopamine 3.0.5](https://github.com/digimezzo/dopamine/releases/tag/v3.0.5)
+> [Dopamine 3.0.5](https://github.com/digimezzo/dopamine/releases/tag/v3.0.5)
 
 Once all your music is parsed into the SQLite database that [Dopamine](https://github.com/digimezzo/dopamine) creates, you will need to update the `config.user.json` file to include some details about your music.
 
@@ -56,3 +56,11 @@ Once you have those configs setup, you can run the local server like so:
 You should now see a list of all your music artists and a search bar.
 
 Happy Tagging!
+
+## Tagging
+
+TBD
+
+## Playlist Generation
+
+TBD
