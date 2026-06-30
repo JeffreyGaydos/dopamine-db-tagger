@@ -61,7 +61,7 @@ label ~ input {
     }
 }
 
-.tag:hover {
+.tag:hover:not(:disabled) {
     transform: scale(1.1);
     cursor: pointer;
 }
@@ -78,6 +78,11 @@ label ~ input {
 
 .tag button:hover {
     color: red;
+}
+
+.tag:disabled {
+    cursor: not-allowed;
+    background-color: rgb(0, 0, 147);
 }
 
 a#next-track, a#previous-track {

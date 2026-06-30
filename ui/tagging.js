@@ -8,7 +8,7 @@ window.addEventListener("DOMContentLoaded", () => {
     AddHandlers(responseJson);
     console.log(responseJson.currentTags[0]);
     responseJson.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag));
-    responseJson.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#all-tags-box"));
+    responseJson.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#all-tags-box", true, { AddParams: { trackID: responseJson.TrackID } }, responseJson.currentTags.filter(ct => ct.TagName == t.TagName).length > 0));
     setInterval(() => {
         SearchInterval(responseJson.TrackID);
     }, 250);
@@ -57,7 +57,7 @@ function AddHandlers(json) {
     document.querySelector("#next-track").href = `./${json.pageInfo.next}`;
 }
 
-function AddTagToUI(tagName, isArtist, boxSelector = "#current-tags-box", showX = true, endpoints = undefined) {
+function AddTagToUI(tagName, isArtist, boxSelector = "#current-tags-box", showX = true, endpoints = undefined, disabled=false) {
     const tagElement = document.createElement("BUTTON");
     tagElement.classList.add("tag");
     if(isArtist) tagElement.classList.add("a");
@@ -71,6 +71,7 @@ function AddTagToUI(tagName, isArtist, boxSelector = "#current-tags-box", showX 
             });
         });
     }
+    if(disabled) tagElement.setAttribute("disabled", null);
     if(showX) {
         const xButton = document.createElement("BUTTON");
         xButton.innerHTML = "&Cross;"
@@ -101,17 +102,17 @@ function SearchInterval(trackID) {
             srBox.innerHTML = ""; //clear existing results
             ntDisplay.innerHTML = "";
             document.querySelector("#new-tag-blurb").style.display = "none";
-            document.querySelector("#existing-tag-blurb").style.display = "none";
+            document.querySelector("#existing-tag-blurb").style.display = "none"            
             if(!r[0]?.ExactMatch) {
                 document.querySelector("#new-tag-blurb").style.display = "block";
                 AddTagToUI(queryString, document.querySelector("#is-artist").checked, "#new-tag-display", false, {
                     AddParams: { trackID }
                 });
             }
-            if(r.length > 0) {
+            if(r.filter(e => e.AlreadyOnTrack == 0).length > 0) {
                 document.querySelector("#existing-tag-blurb").style.display = "block";
             }
-            r.forEach(sr => {
+            r.filter(e => e.AlreadyOnTrack == 0).forEach(sr => {
                 AddTagToUI(sr.TagName, document.querySelector("#is-artist").checked, "#search-results", false, {
                     AddParams: { trackID }
                 });
@@ -133,9 +134,9 @@ function HandleAddTagResponse(r, trackID) {
             r.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag));
             if(r.allTags) {
                 document.querySelector("#all-tags-box").innerHTML = "";
-                r.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#all-tags-box", {
+                r.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#all-tags-box", true, {
                         AddParams: { trackID }
-                }));
+                }, r.currentTags.filter(ct => ct.TagName == t.TagName).length > 0));
                 console.log("Refreshed all tags list");
             }
         });

@@ -132,7 +132,8 @@ export async function SearchAvailableTags(stringQuery, trackID) {
     return await myDb.all(`
         SELECT
             T.TagName,
-            IIF(T.TagName = $s, 1, 0) AS ExactMatch
+            IIF(T.TagName = $s, 1, 0) AS ExactMatch,
+            IIF(TA.TrackID IS NULL, 0, 1) AS AlreadyOnTrack
         FROM Tags T
         LEFT JOIN TaggedAll TA
             ON T.TagName = TA.TagName
@@ -141,7 +142,7 @@ export async function SearchAvailableTags(stringQuery, trackID) {
             T.TagName = $s
             OR
             T.TagName LIKE CONCAT('%', $s, '%')
-        ) AND TA.TrackID IS NULL
+        )
     `, { $t: trackID, $s: stringQuery }
     );
 }
