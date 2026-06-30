@@ -1,4 +1,4 @@
-import { GetAllTags, GetAllTagsForTrack, GetAllTrackData, GetLandingLinkData, GetNextPreviousTrackID, SearchTracks } from "./db-client.js";
+import { AddTagForTrack, GetAllTags, GetAllTagsForTrack, GetAllTrackData, GetLandingLinkData, GetNextPreviousTrackID, SearchAvailableTags, SearchTracks } from "./db-client.js";
 import { GetConfigJSONCached } from "./utilities.js";
 
 /**
@@ -68,4 +68,42 @@ export async function Tagging(trackID, baseHtml) {
 export async function GetTrackSearchResults(stringQuery) {
     const searchResults = await SearchTracks(stringQuery);
     return searchResults;
+}
+
+export async function GetAvailableTagSearchRestults(stringQuery, trackID) {
+    const searchResults = await SearchAvailableTags(stringQuery, trackID);
+    return searchResults;
+}
+
+export async function AddTag(tagName, trackID, artist=false) {
+    if(!artist) {
+        const addResult = await AddTagForTrack(tagName, trackID);
+        return {
+            shouldRefreshAllTagList: !!addResult.addedNewTag[0],
+            rejectedTagAdd: !addResult.addedTrackTag[0]
+        }
+    }
+    
+}
+
+export async function EditTag(tagName, newText, newColor) {
+
+}
+
+export async function DeleteTag(tagName) {
+
+}
+
+export async function RemoveTag(tagName, trackID) {
+
+}
+
+export async function RefreshTagLists(trackID, allTagsRefresh = 0) {
+    const currentTags = await GetAllTagsForTrack(trackID);
+    const allTags = !!allTagsRefresh ? await GetAllTags() : undefined;
+
+    return {
+        currentTags,
+        allTags
+    };
 }

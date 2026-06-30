@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { GetTrackSearchResults } from './controller.js';
+import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTag } from './controller.js';
 
 export async function GetApiResource(url, mime, res) {
     RouteAPIEndpoints(url).then(modifiedData => {
@@ -29,16 +29,62 @@ async function RouteAPIEndpoints(url) {
         case "search":
             switch(urlBits[2]) {
                 case "tracks":
-                    const result = await GetTrackSearchResults(decodeURI(urlBits[3]));
+                    const resultTrack = await GetTrackSearchResults(decodeURI(urlBits[3]));
                     return {
-                        apiData: result,
+                        apiData: resultTrack,
                         modified: true
                     };
                     break;
                 case "tags":
+                    const resultTag = await GetAvailableTagSearchRestults(decodeURI(urlBits[4]), urlBits[3]);
+                    return {
+                        apiData: resultTag,
+                        modified: true
+                    }
                     break;
             }
-
+        case "tag":
+            switch(urlBits[2]) {
+                case "add":
+                    const addResult = await AddTag(decodeURI(urlBits[4]), urlBits[3]);
+                    return {
+                        apiData: addResult,
+                        modified: true
+                    };
+                    break;
+                case "remove":
+                    const removeResult = await RemoveTag(urlBits[4], urlBits[3]);
+                    return {
+                        apiData: removeResult,
+                        modified: true
+                    };
+                    break;
+                case "edit":
+                    if(!urlBits[3] || !urlBits[4] || !urlBits[5]) {
+                        console.log("Expected one or more missing parameters: /edit/tagName/newText/newColor");
+                    }
+                    const editResult = await EditTag(urlBits[3], urlBits[4], urlBits[5]);
+                    return {
+                        apiData: editResult,
+                        modified: true
+                    };
+                    break;
+                    break;
+                case "delete":
+                    const deleteResult = await DeleteTag(urlBits[3]);
+                    return {
+                        apiData: deleteResult,
+                        modified: true
+                    };
+                    break;
+                case "refresh-lists":
+                    const refreshResult = await RefreshTagLists(urlBits[3], urlBits[4]);
+                    return {
+                        apiData: refreshResult,
+                        modified: true
+                    }
+                    break;
+            }
     }
     return {
         apiData: "",

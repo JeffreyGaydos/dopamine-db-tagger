@@ -126,3 +126,57 @@ export async function SearchTracks(stringQuery) {
     `, { $s: stringQuery }
     );
 }
+
+export async function SearchAvailableTags(stringQuery, trackID) {
+    const myDb = await GetDBCached();
+    return await myDb.all(`
+        SELECT
+            T.TagName,
+            IIF(T.TagName = $s, 1, 0) AS ExactMatch
+        FROM Tags T
+        LEFT JOIN TaggedAll TA
+            ON T.TagName = TA.TagName
+            AND TA.TrackID = $t
+        WHERE (
+            T.TagName = $s
+            OR
+            T.TagName LIKE CONCAT('%', $s, '%')
+        ) AND TA.TrackID IS NULL
+    `, { $t: trackID, $s: stringQuery }
+    );
+}
+
+export async function AddTagForTrack(tagName, trackID) {
+    const myDb = await GetDBCached();
+    const addedNewTag = await myDb.all(`
+        INSERT INTO Tags (TagName)
+        SELECT $s
+        WHERE NOT EXISTS (
+            SELECT NULL
+            FROM Tags
+            WHERE TagName = $s
+        )
+        RETURNING TagName
+    `, { $s: tagName });
+
+    const addedTrackTag = await myDb.all(`
+        INSERT INTO TaggedTracks (TrackID, TagName)
+        SELECT $t, $s
+        WHERE NOT EXISTS (
+            SELECT NULL
+            FROM TaggedAll
+            WHERE TrackID = $t
+            AND TagName = $s
+        )
+        RETURNING TagName
+    `, { $s: tagName, $t: trackID });
+
+    return {
+        addedNewTag, 
+        addedTrackTag
+    };
+}
+
+export async function AddArtistTag(tagName, trackID) {
+
+}

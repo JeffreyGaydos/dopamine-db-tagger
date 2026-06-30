@@ -36,14 +36,16 @@ label ~ input {
 
 .tag {
     border-radius: 5px;
-    height: 20px;
-    width: min-content;
+    min-height: 30px;
+    width: max-content;
+    max-width: 400px;
     background-color: blue;
     color: white;
     font-weight: 600;
     padding: 5px 10px;
     margin: 5px;
     display: inline-flex;
+    transition: all ease 0.2s;
 
     button {
         padding: 0;
@@ -55,12 +57,27 @@ label ~ input {
         border: 0;
         background: transparent;
         cursor: pointer;
+        transition: all ease 0.2s;
     }
+}
+
+.tag:hover {
+    transform: scale(1.1);
+    cursor: pointer;
+}
+
+#current-tags-box .tag:hover {
+    transform: unset;
+    cursor: not-allowed;
 }
 
 .tag.a {
     outline: 2px solid var(--title-color);
     border: 2px solid white;
+}
+
+.tag button:hover {
+    color: red;
 }
 
 a#next-track, a#previous-track {
@@ -83,4 +100,8 @@ a#next-track, a#previous-track {
         border-left: 3px dashed var(--accent-color);
         padding-left: 10px;
     }
+}
+
+form {
+    border-bottom: 3px dashed var(--accent-color);
 }
