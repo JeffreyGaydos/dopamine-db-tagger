@@ -1,4 +1,4 @@
-import { AddTagForTrack, GetAllTags, GetAllTagsForTrack, GetAllTrackData, GetLandingLinkData, GetNextPreviousTrackID, SearchAvailableTags, SearchTracks } from "./db-client.js";
+import { AddTagForTrack, GetAllTags, GetAllTagsForTrack, GetAllTrackData, GetLandingLinkData, GetNextPreviousTrackID, RemoveTag, SearchAvailableTags, SearchTracks } from "./db-client.js";
 import { GetConfigJSONCached } from "./utilities.js";
 
 /**
@@ -94,8 +94,8 @@ export async function DeleteTag(tagName) {
 
 }
 
-export async function RemoveTag(tagName, trackID) {
-
+export async function RemoveTagFromTrack(tagName, trackID) {
+    await RemoveTag(tagName, trackID);
 }
 
 export async function RefreshTagLists(trackID, allTagsRefresh = 0) {

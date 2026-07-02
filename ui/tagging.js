@@ -1,5 +1,13 @@
 window.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#tag").focus();
+    document.querySelector("#tag").addEventListener("keydown", (e) => {
+        const chooseExisting = e.key == 'Enter' && !e.shiftKey;
+        const chooseNew = e.key == 'Enter' && e.shiftKey;
+        if(chooseExisting || chooseNew) {
+            const chosenTag = document.querySelector(`${chooseExisting ? "#search-results" : "#new-tag-display"} .tag:nth-child(1)`);
+            if(chosenTag) chosenTag.click(); //TODO this double clicks for some reason...
+        }
+    })
     document.querySelector("form").addEventListener("submit", (e) => {
         e.preventDefault();
     });
@@ -7,14 +15,27 @@ window.addEventListener("DOMContentLoaded", () => {
     RenderMetadata(responseJson);
     AddHandlers(responseJson);
     console.log(responseJson.currentTags[0]);
-    responseJson.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag));
-    responseJson.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#all-tags-box", true, { AddParams: { trackID: responseJson.TrackID } }, responseJson.currentTags.filter(ct => ct.TagName == t.TagName).length > 0));
+    responseJson.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#current-tags-box", {
+        RemoveParams: { trackID: responseJson.TrackID }
+    }));
+    responseJson.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#all-tags-box", {
+        AddParams: { trackID: responseJson.TrackID }
+    }, responseJson.currentTags.filter(ct => ct.TagName == t.TagName).length > 0));
     setInterval(() => {
         SearchInterval(responseJson.TrackID);
     }, 250);
     document.querySelector("#is-artist").addEventListener("change", () => {
         previousSearchQuery = ""; //If the artist tag state changes, we should force a refresh of the search
         SearchInterval(responseJson.TrackID);
+    });
+    document.querySelector("#remove-all").addEventListener("click", () => {
+        if(confirm("Remove all tags from this track?")) {
+            document.querySelectorAll("#current-tags-box .tag").forEach(t => {
+                fetch(`http://localhost:8080/api/tag/remove/${responseJson.TrackID}/${t.getAttribute("ev")}`).then((f) => {
+                    HandleRemoveTagResponse(responseJson.TrackID);
+                });
+            });
+        }
     });
 });
 
@@ -57,24 +78,41 @@ function AddHandlers(json) {
     document.querySelector("#next-track").href = `./${json.pageInfo.next}`;
 }
 
-function AddTagToUI(tagName, isArtist, boxSelector = "#current-tags-box", showX = true, endpoints = undefined, disabled=false) {
+let addLoading = false; //kind of used as a debouncer
+let removeLoading = false;
+
+function AddTagToUI(tagName, isArtist, boxSelector, endpoints = undefined, disabled=false) {
     const tagElement = document.createElement("BUTTON");
     tagElement.classList.add("tag");
+    tagElement.setAttribute("ev", tagName);
     if(isArtist) tagElement.classList.add("a");
     tagElement.innerText = tagName;
     if(endpoints?.AddParams) {
         tagElement.addEventListener("click", () => {
-            fetch(`http://localhost:8080/api/tag/add/${endpoints.AddParams.trackID}/${encodeURI(tagName)}`).then((f) => {
-                f.json().then(r => {
-                    HandleAddTagResponse(r, endpoints.AddParams.trackID);
+            if(!addLoading) {
+                addLoading = true;
+                fetch(`http://localhost:8080/api/tag/add/${endpoints.AddParams.trackID}/${encodeURI(tagName)}`).then((f) => {
+                    f.json().then(r => {
+                        HandleAddTagResponse(r, endpoints.AddParams.trackID);
+                        addLoading = false;
+                    });
                 });
-            });
+            }
         });
     }
     if(disabled) tagElement.setAttribute("disabled", null);
-    if(showX) {
+    if(endpoints?.RemoveParams) {
         const xButton = document.createElement("BUTTON");
         xButton.innerHTML = "&Cross;"
+        xButton.addEventListener("click", () => {
+            if(!removeLoading) {
+                removeLoading = true;
+                fetch(`http://localhost:8080/api/tag/remove/${endpoints.RemoveParams.trackID}/${encodeURI(tagName)}`).then((f) => {
+                    HandleRemoveTagResponse(endpoints.RemoveParams.trackID);
+                    removeLoading = false;
+                });
+            }
+        })
         tagElement.appendChild(xButton);
     }
 
@@ -105,7 +143,7 @@ function SearchInterval(trackID) {
             document.querySelector("#existing-tag-blurb").style.display = "none"            
             if(!r[0]?.ExactMatch) {
                 document.querySelector("#new-tag-blurb").style.display = "block";
-                AddTagToUI(queryString, document.querySelector("#is-artist").checked, "#new-tag-display", false, {
+                AddTagToUI(queryString, document.querySelector("#is-artist").checked, "#new-tag-display", {
                     AddParams: { trackID }
                 });
             }
@@ -113,7 +151,7 @@ function SearchInterval(trackID) {
                 document.querySelector("#existing-tag-blurb").style.display = "block";
             }
             r.filter(e => e.AlreadyOnTrack == 0).forEach(sr => {
-                AddTagToUI(sr.TagName, document.querySelector("#is-artist").checked, "#search-results", false, {
+                AddTagToUI(sr.TagName, document.querySelector("#is-artist").checked, "#search-results", {
                     AddParams: { trackID }
                 });
             });
@@ -127,20 +165,30 @@ function HandleAddTagResponse(r, trackID) {
         alert("ERROR: Tag was already present on the track. Tag not added"); //falback in case my disablement code isn't sealed
         return;
     }
+    RefreshLists(r.shouldRefreshAllTagList, trackID);
+    document.querySelector("#tag").value = "";
+    document.querySelector("#tag").focus();
+}
 
-    fetch(`http://localhost:8080/api/tag/refresh-lists/${trackID}/${r.shouldRefreshAllTagList ? 1 : 0}`).then((f) => {
+function HandleRemoveTagResponse(trackID) {
+    RefreshLists(false, trackID);
+}
+
+function RefreshLists(shouldRefreshAllTagList, trackID) {
+    fetch(`http://localhost:8080/api/tag/refresh-lists/${trackID}/${shouldRefreshAllTagList ? 1 : 0}`).then((f) => {
         f.json().then(r => {
+            console.log(r);
             document.querySelector("#current-tags-box").innerHTML = "";
-            r.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag));
+            r.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#current-tags-box", {
+                RemoveParams: { trackID }
+            }));
             if(r.allTags) {
                 document.querySelector("#all-tags-box").innerHTML = "";
-                r.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#all-tags-box", true, {
-                        AddParams: { trackID }
+                r.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#all-tags-box", {
+                    AddParams: { trackID },
                 }, r.currentTags.filter(ct => ct.TagName == t.TagName).length > 0));
                 console.log("Refreshed all tags list");
             }
         });
     });
-    document.querySelector("#tag").value = "";
-    document.querySelector("#tag").focus();
 }

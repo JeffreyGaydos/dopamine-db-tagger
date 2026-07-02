@@ -20,7 +20,8 @@ async function GetDBCached() {
 
     db = await open({
         filename: await GetDBPathCached(),
-        driver: sqlite3.Database
+        driver: sqlite3.Database,
+        mode: sqlite3.OPEN_READWRITE
     });
     return db;
 }
@@ -180,4 +181,13 @@ export async function AddTagForTrack(tagName, trackID) {
 
 export async function AddArtistTag(tagName, trackID) {
 
+}
+
+export async function RemoveTag(tagName, trackID) {
+    const myDb = await GetDBCached();
+    const result = await myDb.all(`
+        DELETE FROM TaggedTracks
+        WHERE TrackID = $t
+        AND TagName = $s
+    `, { $t: trackID, $s: tagName });
 }
