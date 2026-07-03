@@ -191,3 +191,39 @@ export async function RemoveTag(tagName, trackID) {
         AND TagName = $s
     `, { $t: trackID, $s: tagName });
 }
+
+export async function GetTagUsageCount(tagName) {
+    const myDb = await GetDBCached();
+    const trackTagResult = await myDb.all(`
+        SELECT COUNT(*) FROM TaggedTracks
+        WHERE TagName = $s
+    `, { $s: tagName });
+
+    const artistTagResult = await myDb.all(`
+        SELECT COUNT(*) FROM TaggedArtists
+        WHERE TagName = $s
+    `, { $s: tagName });
+
+    return {
+        trackCount: trackTagResult,
+        artistCount: artistTagResult
+    };
+}
+
+export async function DeleteTag(tagName) {
+    const myDb = await GetDBCached();
+    const deleteTracks = await myDb.all(`
+        DELETE FROM TaggedTracks
+        WHERE TagName = $s
+    `, { $s: tagName });
+
+    const deleteArtists = await myDb.all(`
+        DELETE FROM TaggedArtists
+        WHERE TagName = $s
+    `, { $s: tagName });
+
+    const deleteTag = await myDb.all(`
+        DELETE FROM Tags
+        WHERE TagName = $s
+    `, { $s: tagName });
+}

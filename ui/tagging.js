@@ -19,7 +19,8 @@ window.addEventListener("DOMContentLoaded", () => {
         RemoveParams: { trackID: responseJson.TrackID }
     }));
     responseJson.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#all-tags-box", {
-        AddParams: { trackID: responseJson.TrackID }
+        AddParams: { trackID: responseJson.TrackID },
+        DeleteParams: { trackID: responseJson.TrackID }
     }, responseJson.currentTags.filter(ct => ct.TagName == t.TagName).length > 0));
     setInterval(() => {
         SearchInterval(responseJson.TrackID);
@@ -80,6 +81,7 @@ function AddHandlers(json) {
 
 let addLoading = false; //kind of used as a debouncer
 let removeLoading = false;
+let deleteLoading = false;
 
 function AddTagToUI(tagName, isArtist, boxSelector, endpoints = undefined, disabled=false) {
     const tagElement = document.createElement("BUTTON");
@@ -101,18 +103,43 @@ function AddTagToUI(tagName, isArtist, boxSelector, endpoints = undefined, disab
         });
     }
     if(disabled) tagElement.setAttribute("disabled", null);
-    if(endpoints?.RemoveParams) {
+    if(endpoints?.RemoveParams || endpoints?.DeleteParams) {
         const xButton = document.createElement("BUTTON");
         xButton.innerHTML = "&Cross;"
-        xButton.addEventListener("click", () => {
-            if(!removeLoading) {
-                removeLoading = true;
-                fetch(`http://localhost:8080/api/tag/remove/${endpoints.RemoveParams.trackID}/${encodeURI(tagName)}`).then((f) => {
-                    HandleRemoveTagResponse(endpoints.RemoveParams.trackID);
-                    removeLoading = false;
-                });
-            }
-        })
+        if(endpoints?.RemoveParams) {
+            xButton.addEventListener("click", () => {
+                if(!removeLoading) {
+                    removeLoading = true;
+                    fetch(`http://localhost:8080/api/tag/remove/${endpoints.RemoveParams.trackID}/${encodeURI(tagName)}`).then((f) => {
+                        HandleRemoveTagResponse(endpoints.RemoveParams.trackID);
+                        removeLoading = false;
+                    });
+                }
+            });
+        }
+        if(endpoints?.DeleteParams) {
+            xButton.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if(!deleteLoading) {
+                    deleteLoading = true;
+                    fetch(`http://localhost:8080/api/tag/usage/${encodeURI(tagName)}`).then((f) => {
+                        f.json().then(r => {
+                            trackCount = r.trackCount[0]["COUNT(*)"];
+                            artistCount = r.artistCount[0]["COUNT(*)"]
+                            if(confirm(`Confirm Deletion of Tag, affects ${trackCount} tracks excluding ${artistCount} artists`)) {
+                                fetch(`http://localhost:8080/api/tag/delete/${encodeURI(tagName)}`).then((f) => {
+                                    HandleDeleteTagResponse(endpoints.DeleteParams.trackID);
+                                    deleteLoading = false;
+                                });
+                            } else {
+                                deleteLoading = false;
+                            }
+                        });
+                    });
+                }
+            });
+        }
         tagElement.appendChild(xButton);
     }
 
@@ -174,6 +201,10 @@ function HandleRemoveTagResponse(trackID) {
     RefreshLists(false, trackID);
 }
 
+function HandleDeleteTagResponse(trackID) {
+    RefreshLists(true, trackID);
+}
+
 function RefreshLists(shouldRefreshAllTagList, trackID) {
     fetch(`http://localhost:8080/api/tag/refresh-lists/${trackID}/${shouldRefreshAllTagList ? 1 : 0}`).then((f) => {
         f.json().then(r => {
@@ -186,6 +217,7 @@ function RefreshLists(shouldRefreshAllTagList, trackID) {
                 document.querySelector("#all-tags-box").innerHTML = "";
                 r.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#all-tags-box", {
                     AddParams: { trackID },
+                    DeleteParams: { trackID }
                 }, r.currentTags.filter(ct => ct.TagName == t.TagName).length > 0));
                 console.log("Refreshed all tags list");
             }

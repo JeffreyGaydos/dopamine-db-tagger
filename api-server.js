@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack } from './controller.js';
+import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts } from './controller.js';
 
 export async function GetApiResource(url, mime, res) {
     RouteAPIEndpoints(url).then(modifiedData => {
@@ -71,7 +71,7 @@ async function RouteAPIEndpoints(url) {
                     break;
                     break;
                 case "delete":
-                    const deleteResult = await DeleteTag(urlBits[3]);
+                    const deleteResult = await DeleteTagEverywhere(urlBits[3]);
                     return {
                         apiData: deleteResult,
                         modified: true
@@ -81,6 +81,13 @@ async function RouteAPIEndpoints(url) {
                     const refreshResult = await RefreshTagLists(urlBits[3], urlBits[4]);
                     return {
                         apiData: refreshResult,
+                        modified: true
+                    }
+                    break;
+                case "usage":
+                    const usageResult = await GetDeletionCounts(urlBits[3]);
+                    return {
+                        apiData: usageResult,
                         modified: true
                     }
                     break;
