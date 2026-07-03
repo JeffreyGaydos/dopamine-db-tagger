@@ -130,3 +130,7 @@ form.input-form {
 #left-pane summary {
     margin-top: 20px;
 }
+
+#right-pane .header:after {
+    width: 50%;
+}
