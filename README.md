@@ -1,6 +1,8 @@
 # Dopamine DB Tagger
 Standing on top of the [Dopamine](https://github.com/digimezzo/dopamine) SQLite database, runs users through their tracks in various ways so that they can add more descriptors to their music. After tags are added, users can then export different queries of tags as playlist files compatible with various platforms.
 
+<img src="./readme_assets/Tagging.png">
+
 ## What are "Tags"?
 
 Tags are any word that you want to associate with a track. The purpose of a tag is to classify your tracks into some other category not already defined by traditional MP3 tags (Genre, Artist, etc.). Tags could be an emotion that a track primarily evokes, a time period in which you listened to a handful of tracks, even a rating system ("Five Stars" could be a tag). The end goal of tagging is to create richer metadata on your tracks so that you can make meaningful playlists more easily. Consider the following example:
@@ -34,7 +36,17 @@ You'll need to install the latest version of [Dopamine](https://github.com/digim
 
 > [Dopamine 3.0.5](https://github.com/digimezzo/dopamine/releases/tag/v3.0.5)
 
-Once all your music is parsed into the SQLite database that [Dopamine](https://github.com/digimezzo/dopamine) creates, you will need to update the `config.user.json` file to include some details about your music.
+Setup [Dopamine](https://github.com/digimezzo/dopamine) as instructed to make sure it creates a database with your default music metadata in it.
+
+You will also need to install the LTS version of [Node.js](https://nodejs.org/en/download).
+
+You can then run the local server like so:
+1. Navigate to the root of this repo in the command line
+2. Run `npm install` to install dependencies
+3. Run `node server.js` to start the server
+4. Navigate to `localhost:8080/ui/setup.html` in any browser
+<img src="./readme_assets/Setup.png">
+5. Input the configs. There are explanations on that page but here are some details:
 
 - `DatabaseLocation`
   - This is the location of the SQLite database that [Dopamine](https://github.com/digimezzo/dopamine) created.
@@ -45,15 +57,11 @@ Once all your music is parsed into the SQLite database that [Dopamine](https://g
   - This system currently only supports 1 `BaseFolderPath`, so if you have multiple, you will have to tag tracks in 1 particular folder at a time.
   - This essentially "mounts" the folder into the system so that the local server has access to those music files for playback
 
-You will also need to install the LTS version of [Node.js](https://nodejs.org/en/download).
+* Note that you can also modify these configs directly in `config.user.json` if an inescapable error occurs with the local server.
 
-Once you have those configs setup, you can run the local server like so:
-1. Navigate to the root of this repo in the command line
-2. Run `npm install` to install dependencies
-3. Run `node server.js` to start the server
-4. navigate to `localhost:8080/ui/setup.html` in any browser
+6. Navigate to `localhost:8080/ui/landing.html` or click the green icon in the upper left of the setup page. You should now see a list of all your music artists and a search bar. Click a link or search for a specific track and click a link to start tagging!
 
-You should now see a list of all your music artists and a search bar. Click a link or search for a specific track and click a link to start tagging!
+<img src="./readme_assets/Landing.png">
 
 Happy Tagging!
 
