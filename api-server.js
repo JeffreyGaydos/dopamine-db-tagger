@@ -1,5 +1,7 @@
 import fs from 'node:fs';
-import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts } from './controller.js';
+import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled } from './controller.js';
+import Install from './install.js';
+import Uninstall from './uninstall.js';
 
 export async function GetApiResource(url, mime, res) {
     RouteAPIEndpoints(url).then(modifiedData => {
@@ -95,6 +97,30 @@ async function RouteAPIEndpoints(url) {
                     const mergeResult = await EditTag(decodeURI(urlBits[3]), decodeURI(urlBits[4]));
                     return {
                         apiData: mergeResult,
+                        modified: true
+                    };
+                    break;
+            }
+        case "setup":
+            switch(urlBits[2]) {
+                case "install":
+                    await Install();
+                    return {
+                        apiData: undefined,
+                        modified: true
+                    };
+                    break;
+                case "uninstall":
+                    await Uninstall();
+                    return {
+                        apiData: undefined,
+                        modified: true
+                    };
+                    break;
+                case "status":
+                    const isInstalledResult = await IsInstalled();
+                    return {
+                        apiData: isInstalledResult,
                         modified: true
                     };
                     break;

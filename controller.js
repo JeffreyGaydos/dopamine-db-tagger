@@ -1,4 +1,4 @@
-import { AddTagForTrack, DeleteTag, GetAllTags, GetAllTagsForTrack, GetAllTrackData, GetLandingLinkData, GetNextPreviousTrackID, GetTagUsageCount, MergeTags, RemoveTag, SearchAvailableTags, SearchTracks, UpdateTag } from "./db-client.js";
+import { AddTagForTrack, DeleteTag, EvidenceOfInstallation, GetAllTags, GetAllTagsForTrack, GetAllTrackData, GetLandingLinkData, GetNextPreviousTrackID, GetTagUsageCount, MergeTags, RemoveTag, SearchAvailableTags, SearchTracks, UpdateTag } from "./db-client.js";
 import { GetConfigJSONCached } from "./utilities.js";
 
 /**
@@ -120,4 +120,11 @@ export async function RefreshTagLists(trackID, allTagsRefresh = 0) {
 
 export async function MergeTwoTags(tagName, newTagName) {
     await MergeTags(tagName, newTagName);
+}
+
+export async function IsInstalled() {
+    const evidenceResult = await EvidenceOfInstallation();
+    return {
+        installed: evidenceResult.length > 0
+    };
 }

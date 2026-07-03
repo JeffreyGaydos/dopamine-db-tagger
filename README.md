@@ -51,7 +51,7 @@ Once you have those configs setup, you can run the local server like so:
 1. Navigate to the root of this repo in the command line
 2. Run `npm install` to install dependencies
 3. Run `node server.js` to start the server
-4. navigate to `localhost:8080/ui/landing.html` in any browser
+4. navigate to `localhost:8080/ui/setup.html` in any browser
 
 You should now see a list of all your music artists and a search bar. Click a link or search for a specific track and click a link to start tagging!
 

@@ -1,0 +1,9 @@
+#version-info {
+    border: 2px solid blue;
+    border-radius: 10px;
+    width: 20%;
+    padding: 10px;
+    svg {
+        color: blue;
+    }
+}

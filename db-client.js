@@ -280,3 +280,12 @@ export async function MergeTags(tagName, newTagName) {
         WHERE TagName = $s
     `, { $s: tagName, $n: newTagName });   
 }
+
+export async function EvidenceOfInstallation() {
+    const myDb = await GetDBCached();
+    const evidence = await myDb.all(`
+         SELECT name FROM sqlite_master WHERE type='table' AND name='Tags'
+    `);
+
+    return evidence;
+}
