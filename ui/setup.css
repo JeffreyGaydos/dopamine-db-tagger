@@ -7,3 +7,15 @@
         color: blue;
     }
 }
+
+form {
+    width: 80%;
+}
+
+input {
+    width: 100%;
+}
+
+#new-installation, #update-installation {
+    display: none;
+}

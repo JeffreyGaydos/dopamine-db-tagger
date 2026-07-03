@@ -93,6 +93,12 @@ a#next-track, a#previous-track {
     border: 2px solid var(--accent-color);
     border-radius: 5px;
     padding: 5px 3px 0px 5px;
+    background: linear-gradient(-45deg, var(--green), var(--yellow));
+    color: var(--accent-color);
+}
+
+a#next-track {
+    padding-right: 7px;
 }
 
 #parent {

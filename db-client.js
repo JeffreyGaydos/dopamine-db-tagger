@@ -18,16 +18,27 @@ let db = undefined;
 async function GetDBCached() {
     if(db) return db;
 
-    db = await open({
-        filename: await GetDBPathCached(),
-        driver: sqlite3.Database,
-        mode: sqlite3.OPEN_READWRITE
-    });
-    return db;
+    try {
+        db = await open({
+            filename: await GetDBPathCached(),
+            driver: sqlite3.Database,
+            mode: sqlite3.OPEN_READWRITE
+        });
+        return db;
+    }
+    catch(e) {
+        return false;
+    }
+}
+
+export function DBClient_BustCaches() {
+    db = undefined;
+    dbPath = undefined;
 }
 
 export async function GetLandingLinkData() {
     const myDb = await GetDBCached();
+    if(!myDb) return undefined;
     const result = await myDb.all(`
         SELECT DISTINCT
             coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists) AS ArtistsRaw,
@@ -43,6 +54,7 @@ export async function GetLandingLinkData() {
 
 export async function GetAllTrackData(trackID) {
     const myDb = await GetDBCached();
+    if(!myDb) return undefined;
     const result = await myDb.all(`
         SELECT * FROM Track WHERE TrackID = $t
     `, { $t: trackID }
@@ -55,6 +67,7 @@ export async function GetAllTrackData(trackID) {
 
 export async function GetNextPreviousTrackID(trackID) {
     const myDb = await GetDBCached();
+    if(!myDb) return undefined;
     const nextResult = await myDb.all(`
         SELECT TrackID
         FROM Track
@@ -81,6 +94,7 @@ export async function GetNextPreviousTrackID(trackID) {
 
 export async function GetAllTags() {
     const myDb = await GetDBCached();
+    if(!myDb) return undefined;
     const allTagResult = await myDb.all(`
         SELECT TagName FROM Tags
     `);
@@ -90,6 +104,7 @@ export async function GetAllTags() {
 
 export async function GetAllTagsForTrack(trackID) {
     const myDb = await GetDBCached();
+    if(!myDb) return undefined;
     const allTagResult = await myDb.all(`
         SELECT * FROM TaggedAll
         WHERE TrackID = $t
@@ -101,6 +116,7 @@ export async function GetAllTagsForTrack(trackID) {
 
 export async function SearchTracks(stringQuery) {
     const myDb = await GetDBCached();
+    if(!myDb) return undefined;
     return await myDb.all(`
         SELECT
             TrackID,
@@ -130,6 +146,7 @@ export async function SearchTracks(stringQuery) {
 
 export async function SearchAvailableTags(stringQuery, trackID) {
     const myDb = await GetDBCached();
+    if(!myDb) return undefined;
     return await myDb.all(`
         SELECT
             T.TagName,
@@ -150,6 +167,7 @@ export async function SearchAvailableTags(stringQuery, trackID) {
 
 export async function AddTagForTrack(tagName, trackID) {
     const myDb = await GetDBCached();
+    if(!myDb) return undefined;
     const addedNewTag = await myDb.all(`
         INSERT INTO Tags (TagName)
         SELECT $s
@@ -185,6 +203,7 @@ export async function AddArtistTag(tagName, trackID) {
 
 export async function RemoveTag(tagName, trackID) {
     const myDb = await GetDBCached();
+    if(!myDb) return undefined;
     const result = await myDb.all(`
         DELETE FROM TaggedTracks
         WHERE TrackID = $t
@@ -194,6 +213,7 @@ export async function RemoveTag(tagName, trackID) {
 
 export async function GetTagUsageCount(tagName) {
     const myDb = await GetDBCached();
+    if(!myDb) return undefined;
     const trackTagResult = await myDb.all(`
         SELECT COUNT(*) FROM TaggedTracks
         WHERE TagName = $s
@@ -224,6 +244,7 @@ export async function GetTagUsageCount(tagName) {
 
 export async function DeleteTag(tagName) {
     const myDb = await GetDBCached();
+    if(!myDb) return undefined;
     const deleteTracks = await myDb.all(`
         DELETE FROM TaggedTracks
         WHERE TagName = $s
@@ -242,6 +263,7 @@ export async function DeleteTag(tagName) {
 
 export async function UpdateTag(tagName, newTagName) {
     const myDb = await GetDBCached();
+    if(!myDb) return undefined;
     const updateTag = myDb.all(`
         UPDATE Tags
         SET TagName = $n
@@ -263,6 +285,7 @@ export async function UpdateTag(tagName, newTagName) {
 
 export async function MergeTags(tagName, newTagName) {
     const myDb = await GetDBCached();
+    if(!myDb) return undefined;
     const deleteTag = await myDb.all(`
         DELETE FROM Tags
         WHERE TagName = $s
@@ -283,9 +306,20 @@ export async function MergeTags(tagName, newTagName) {
 
 export async function EvidenceOfInstallation() {
     const myDb = await GetDBCached();
+    if(!myDb) return undefined;
     const evidence = await myDb.all(`
          SELECT name FROM sqlite_master WHERE type='table' AND name='Tags'
     `);
 
     return evidence;
+}
+
+export async function GetCurrentVersionOfInstallation() {
+    const myDb = await GetDBCached();
+    if(!myDb) return undefined;
+    const versionResult = await myDb.all(`
+         SELECT InfoValue FROM DBTaggerInfo WHERE InfoName = 'Version'
+    `);
+
+    return versionResult;
 }

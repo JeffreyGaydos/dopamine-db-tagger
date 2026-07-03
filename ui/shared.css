@@ -65,3 +65,14 @@ label {
     z-index: -1;
     top: 0;
 }
+
+div.error:has(*) {
+    border: 2px solid red;
+    width: fit-content;
+    padding: 20px;
+    font-size: 17px;
+    border-radius: 5px;
+    svg {
+        color: red;
+    }
+}

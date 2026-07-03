@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { DBClient_BustCaches } from './db-client.js';
 
 export async function BasicGetFile(path, logSuccess=false) {
     try {
@@ -23,6 +24,18 @@ export async function GetConfigJSONCached() {
         "BaseFolderPath": privateConfigs.BaseFolderPath ?? defaultConfigs.BaseFolderPath
     };
     return config;
+}
+
+export async function SetConfigJSON(dbPath, mfPath) {
+    console.log(dbPath);
+    const newJson = {
+        DatabaseLocation: dbPath,
+        BaseFolderPath: mfPath
+    };
+    await fs.writeFile("./config.user.json", JSON.stringify(newJson));
+    config = undefined;
+    DBClient_BustCaches();
+    return true;
 }
 
 export function GetMimeTypeFromURI(reqUrl) {

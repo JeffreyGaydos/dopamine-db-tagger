@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled } from './controller.js';
 import Install from './install.js';
 import Uninstall from './uninstall.js';
+import { GetConfigJSONCached, SetConfigJSON } from './utilities.js';
 
 export async function GetApiResource(url, mime, res) {
     RouteAPIEndpoints(url).then(modifiedData => {
@@ -104,9 +105,19 @@ async function RouteAPIEndpoints(url) {
         case "setup":
             switch(urlBits[2]) {
                 case "install":
-                    await Install();
+                    let installResult = undefined;
+                    console.log(urlBits[3]);
+                    try {
+                        if(urlBits[3]) {
+                            installResult = await Install(true);    
+                        } else {
+                            installResult = await Install();
+                        }
+                    } catch(e) {
+                        
+                    }
                     return {
-                        apiData: undefined,
+                        apiData: installResult,
                         modified: true
                     };
                     break;
@@ -123,6 +134,26 @@ async function RouteAPIEndpoints(url) {
                         apiData: isInstalledResult,
                         modified: true
                     };
+                    break;
+                case "configs":
+                    switch(urlBits[3]) {
+                        case "get":
+                            const configsResult = await GetConfigJSONCached();
+                            return {
+                                apiData: configsResult,
+                                modified: true
+                            };
+                            break;
+                        case "set":
+                            const realValue4 = decodeURIComponent(urlBits[4]) === "undefined" ? undefined : decodeURIComponent(urlBits[4]);
+                            const realValue5 = decodeURIComponent(urlBits[5]) === "undefined" ? undefined : decodeURIComponent(urlBits[5]);
+                            const setConfigsResult = await SetConfigJSON(realValue4, realValue5);
+                            return {
+                                apiData: !!setConfigsResult,
+                                modified: true
+                            };
+                            break;
+                    }
                     break;
             }
     }

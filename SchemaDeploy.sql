@@ -33,3 +33,9 @@ SELECT TA.TagName, T.TrackID, 1 AS IsArtistTag FROM TaggedArtists TA
 JOIN Track T ON T.Artists LIKE CONCAT('%;', TA.ArtistName, ';%')
 UNION
 SELECT TagName, TrackID, 0 AS IsArtistTag FROM TaggedTracks
+;
+
+CREATE TABLE IF NOT EXISTS DBTaggerInfo (
+    InfoName TEXT,
+    InfoValue TEXT
+);

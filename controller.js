@@ -1,5 +1,5 @@
-import { AddTagForTrack, DeleteTag, EvidenceOfInstallation, GetAllTags, GetAllTagsForTrack, GetAllTrackData, GetLandingLinkData, GetNextPreviousTrackID, GetTagUsageCount, MergeTags, RemoveTag, SearchAvailableTags, SearchTracks, UpdateTag } from "./db-client.js";
-import { GetConfigJSONCached } from "./utilities.js";
+import { AddTagForTrack, DeleteTag, EvidenceOfInstallation, GetAllTags, GetAllTagsForTrack, GetAllTrackData, GetCurrentVersionOfInstallation, GetLandingLinkData, GetNextPreviousTrackID, GetTagUsageCount, MergeTags, RemoveTag, SearchAvailableTags, SearchTracks, UpdateTag } from "./db-client.js";
+import { BasicGetFile, GetConfigJSONCached } from "./utilities.js";
 
 /**
  * [
@@ -21,7 +21,7 @@ import { GetConfigJSONCached } from "./utilities.js";
 export async function Landing() {
     const result = await GetLandingLinkData();
     const groupedArtists = [];
-    result.forEach(r => {
+    result?.forEach(r => {
         const safeArtist = r.ArtistsRaw == "" ? "Unknown Artist" : r.ArtistsRaw;
         if(groupedArtists.filter(g => g.ArtistsRaw === safeArtist).length === 0) {
             groupedArtists.push({
@@ -124,7 +124,15 @@ export async function MergeTwoTags(tagName, newTagName) {
 
 export async function IsInstalled() {
     const evidenceResult = await EvidenceOfInstallation();
+    let versionResult = undefined;
+    if(evidenceResult?.length > 0) {
+        versionResult = await GetCurrentVersionOfInstallation();
+    }
+    let versionFile = await BasicGetFile("./versions.json");
+    versionFile = JSON.parse(versionFile);
     return {
-        installed: evidenceResult.length > 0
+        installed: evidenceResult?.length > 0,
+        existingVersion: versionResult?.length > 0 ? versionResult[0].InfoValue : undefined,
+        presentVersion: versionFile.presentVersion
     };
 }
