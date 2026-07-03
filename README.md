@@ -60,3 +60,7 @@ Happy Tagging!
 ## Playlist Generation
 
 TBD
+
+## Why not just add this to Dopamine?
+
+I believe my use case is fairly nieche, and I don't think it would be worth the Dopamine developer's time to work on something like this. I could fork Dopamine as well, but that would couple this project to Dopamine much more than just using the database.
