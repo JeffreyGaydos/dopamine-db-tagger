@@ -80,6 +80,10 @@ label ~ input {
     color: red;
 }
 
+.tag button.edit:hover {
+    color: rgb(0, 255, 0);
+}
+
 .tag:disabled {
     cursor: not-allowed;
     background-color: rgb(0, 0, 147);

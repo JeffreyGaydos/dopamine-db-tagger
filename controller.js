@@ -1,4 +1,4 @@
-import { AddTagForTrack, DeleteTag, GetAllTags, GetAllTagsForTrack, GetAllTrackData, GetLandingLinkData, GetNextPreviousTrackID, GetTagUsageCount, RemoveTag, SearchAvailableTags, SearchTracks } from "./db-client.js";
+import { AddTagForTrack, DeleteTag, GetAllTags, GetAllTagsForTrack, GetAllTrackData, GetLandingLinkData, GetNextPreviousTrackID, GetTagUsageCount, MergeTags, RemoveTag, SearchAvailableTags, SearchTracks, UpdateTag } from "./db-client.js";
 import { GetConfigJSONCached } from "./utilities.js";
 
 /**
@@ -86,12 +86,18 @@ export async function AddTag(tagName, trackID, artist=false) {
     
 }
 
-export async function EditTag(tagName, newText, newColor) {
-
+export async function EditTag(tagName, newText) {
+    await UpdateTag(tagName, newText);
 }
 
 export async function GetDeletionCounts(tagName) {
-    return await GetTagUsageCount(tagName);
+    const result = await GetTagUsageCount(tagName);
+    return {
+        trackCount: result.trackCount[0]["COUNT(*)"],
+        artistCount: result.artistCount[0]["COUNT(*)"],
+        allCount: result.allCount[0]["COUNT(*)"],
+        tagCount: result.tagCount[0]["COUNT(*)"],
+    }
 }
 
 export async function DeleteTagEverywhere(tagName) {
@@ -110,4 +116,8 @@ export async function RefreshTagLists(trackID, allTagsRefresh = 0) {
         currentTags,
         allTags
     };
+}
+
+export async function MergeTwoTags(tagName, newTagName) {
+    await MergeTags(tagName, newTagName);
 }

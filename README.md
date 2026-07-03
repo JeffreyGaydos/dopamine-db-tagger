@@ -53,13 +53,9 @@ Once you have those configs setup, you can run the local server like so:
 3. Run `node server.js` to start the server
 4. navigate to `localhost:8080/ui/landing.html` in any browser
 
-You should now see a list of all your music artists and a search bar.
+You should now see a list of all your music artists and a search bar. Click a link or search for a specific track and click a link to start tagging!
 
 Happy Tagging!
-
-## Tagging
-
-TBD
 
 ## Playlist Generation
 

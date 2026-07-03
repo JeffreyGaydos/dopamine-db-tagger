@@ -53,7 +53,7 @@ async function RouteAPIEndpoints(url) {
                     };
                     break;
                 case "remove":
-                    await RemoveTagFromTrack(urlBits[4], urlBits[3]);
+                    await RemoveTagFromTrack(decodeURI(urlBits[4]), urlBits[3]);
                     return {
                         apiData: undefined,
                         modified: true
@@ -63,7 +63,7 @@ async function RouteAPIEndpoints(url) {
                     if(!urlBits[3] || !urlBits[4] || !urlBits[5]) {
                         console.log("Expected one or more missing parameters: /edit/tagName/newText/newColor");
                     }
-                    const editResult = await EditTag(urlBits[3], urlBits[4], urlBits[5]);
+                    const editResult = await EditTag(decodeURI(urlBits[3]), decodeURI(urlBits[4]));
                     return {
                         apiData: editResult,
                         modified: true
@@ -71,7 +71,7 @@ async function RouteAPIEndpoints(url) {
                     break;
                     break;
                 case "delete":
-                    const deleteResult = await DeleteTagEverywhere(urlBits[3]);
+                    const deleteResult = await DeleteTagEverywhere(decodeURI(urlBits[3]));
                     return {
                         apiData: deleteResult,
                         modified: true
@@ -82,14 +82,21 @@ async function RouteAPIEndpoints(url) {
                     return {
                         apiData: refreshResult,
                         modified: true
-                    }
+                    };
                     break;
                 case "usage":
-                    const usageResult = await GetDeletionCounts(urlBits[3]);
+                    const usageResult = await GetDeletionCounts(decodeURI(urlBits[3]));
                     return {
                         apiData: usageResult,
                         modified: true
-                    }
+                    };
+                    break;
+                case "merge":
+                    const mergeResult = await EditTag(decodeURI(urlBits[3]), decodeURI(urlBits[4]));
+                    return {
+                        apiData: mergeResult,
+                        modified: true
+                    };
                     break;
             }
     }

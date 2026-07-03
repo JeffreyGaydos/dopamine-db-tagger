@@ -15,12 +15,13 @@ window.addEventListener("DOMContentLoaded", () => {
     RenderMetadata(responseJson);
     AddHandlers(responseJson);
     console.log(responseJson.currentTags[0]);
-    responseJson.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#current-tags-box", {
-        RemoveParams: { trackID: responseJson.TrackID }
+    responseJson.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, responseJson.TrackID, "#current-tags-box", {
+        RemoveParams: true
     }));
-    responseJson.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#all-tags-box", {
-        AddParams: { trackID: responseJson.TrackID },
-        DeleteParams: { trackID: responseJson.TrackID }
+    responseJson.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, responseJson.TrackID, "#all-tags-box", {
+        AddParams: true,
+        DeleteParams: true,
+        EditParams: true
     }, responseJson.currentTags.filter(ct => ct.TagName == t.TagName).length > 0));
     setInterval(() => {
         SearchInterval(responseJson.TrackID);
@@ -36,6 +37,14 @@ window.addEventListener("DOMContentLoaded", () => {
                     HandleRemoveTagResponse(responseJson.TrackID);
                 });
             });
+        }
+    });
+    document.body.addEventListener("keydown", (e) => {
+        if(e.key === "MediaTrackNext") {
+            document.querySelector("#next-track").click();
+        }
+        else if(e.key === "MediaTrackPrevious") {
+            document.querySelector("#previous-track").click();
         }
     });
 });
@@ -82,8 +91,9 @@ function AddHandlers(json) {
 let addLoading = false; //kind of used as a debouncer
 let removeLoading = false;
 let deleteLoading = false;
+let editLoading = false;
 
-function AddTagToUI(tagName, isArtist, boxSelector, endpoints = undefined, disabled=false) {
+function AddTagToUI(tagName, isArtist, trackID, boxSelector, endpoints = undefined, disabled=false) {
     const tagElement = document.createElement("BUTTON");
     tagElement.classList.add("tag");
     tagElement.setAttribute("ev", tagName);
@@ -93,9 +103,9 @@ function AddTagToUI(tagName, isArtist, boxSelector, endpoints = undefined, disab
         tagElement.addEventListener("click", () => {
             if(!addLoading) {
                 addLoading = true;
-                fetch(`http://localhost:8080/api/tag/add/${endpoints.AddParams.trackID}/${encodeURI(tagName)}`).then((f) => {
+                fetch(`http://localhost:8080/api/tag/add/${trackID}/${encodeURI(tagName)}`).then((f) => {
                     f.json().then(r => {
-                        HandleAddTagResponse(r, endpoints.AddParams.trackID);
+                        HandleAddTagResponse(r, trackID);
                         addLoading = false;
                     });
                 });
@@ -110,8 +120,8 @@ function AddTagToUI(tagName, isArtist, boxSelector, endpoints = undefined, disab
             xButton.addEventListener("click", () => {
                 if(!removeLoading) {
                     removeLoading = true;
-                    fetch(`http://localhost:8080/api/tag/remove/${endpoints.RemoveParams.trackID}/${encodeURI(tagName)}`).then((f) => {
-                        HandleRemoveTagResponse(endpoints.RemoveParams.trackID);
+                    fetch(`http://localhost:8080/api/tag/remove/${trackID}/${encodeURI(tagName)}`).then((f) => {
+                        HandleRemoveTagResponse(trackID);
                         removeLoading = false;
                     });
                 }
@@ -125,11 +135,9 @@ function AddTagToUI(tagName, isArtist, boxSelector, endpoints = undefined, disab
                     deleteLoading = true;
                     fetch(`http://localhost:8080/api/tag/usage/${encodeURI(tagName)}`).then((f) => {
                         f.json().then(r => {
-                            trackCount = r.trackCount[0]["COUNT(*)"];
-                            artistCount = r.artistCount[0]["COUNT(*)"]
-                            if(confirm(`Confirm Deletion of Tag, affects ${trackCount} tracks excluding ${artistCount} artists`)) {
+                            if(confirm(`Confirm deletion of tag, affects ${r.trackCount} track tags, ${r.artistCount} artist tags, ${r.allCount} total tracks.`)) {
                                 fetch(`http://localhost:8080/api/tag/delete/${encodeURI(tagName)}`).then((f) => {
-                                    HandleDeleteTagResponse(endpoints.DeleteParams.trackID);
+                                    HandleDeleteTagResponse(trackID);
                                     deleteLoading = false;
                                 });
                             } else {
@@ -141,6 +149,43 @@ function AddTagToUI(tagName, isArtist, boxSelector, endpoints = undefined, disab
             });
         }
         tagElement.appendChild(xButton);
+    }
+
+    if(endpoints?.EditParams) {
+        const eButton = document.createElement("BUTTON");
+        eButton.classList.add("edit");
+        eButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+  <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+  <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"/>
+</svg>`;
+        eButton.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if(!editLoading) {
+                editLoading = true;
+                fetch(`http://localhost:8080/api/tag/usage/${encodeURI(tagName)}`).then((f) => {
+                    f.json().then(r => {
+                        const baseMessage = `Enter new tag text, or cancel. Affects ${r.trackCount} track tags, ${r.artistCount} artist tags, ${r.allCount} total tracks.`;
+                        let newTag = prompt(baseMessage);
+                        if(newTag !== null) {
+                            fetch(`http://localhost:8080/api/tag/usage/${encodeURI(newTag)}`).then((f2) => {
+                                f2.json().then(r2 => {
+                                    if(r2.tagCount === 0) {
+                                        fetch(`http://localhost:8080/api/tag/edit/${encodeURI(tagName)}/${encodeURI(newTag)}`).then((f3) => {
+                                            HandleEditTagResponse(trackID);
+                                        });
+                                    } else {
+                                        alert(`Tag already exists, try again.`/* would you like to merge tag "${tagName}" into the existing tag "${newTag}"?`*/);
+                                    }
+                                });
+                            });
+                        }
+                        editLoading = false;
+                    });
+                });
+            }
+        })
+        tagElement.appendChild(eButton);
     }
 
     document.querySelector(boxSelector).appendChild(tagElement);
@@ -170,16 +215,16 @@ function SearchInterval(trackID) {
             document.querySelector("#existing-tag-blurb").style.display = "none"            
             if(!r[0]?.ExactMatch) {
                 document.querySelector("#new-tag-blurb").style.display = "block";
-                AddTagToUI(queryString, document.querySelector("#is-artist").checked, "#new-tag-display", {
-                    AddParams: { trackID }
+                AddTagToUI(queryString, document.querySelector("#is-artist").checked, trackID, "#new-tag-display", {
+                    AddParams: true
                 });
             }
             if(r.filter(e => e.AlreadyOnTrack == 0).length > 0) {
                 document.querySelector("#existing-tag-blurb").style.display = "block";
             }
             r.filter(e => e.AlreadyOnTrack == 0).forEach(sr => {
-                AddTagToUI(sr.TagName, document.querySelector("#is-artist").checked, "#search-results", {
-                    AddParams: { trackID }
+                AddTagToUI(sr.TagName, document.querySelector("#is-artist").checked, trackID, "#search-results", {
+                    AddParams: true
                 });
             });
         });
@@ -205,21 +250,24 @@ function HandleDeleteTagResponse(trackID) {
     RefreshLists(true, trackID);
 }
 
+function HandleEditTagResponse(trackID) {
+    RefreshLists(true, trackID);
+}
+
 function RefreshLists(shouldRefreshAllTagList, trackID) {
     fetch(`http://localhost:8080/api/tag/refresh-lists/${trackID}/${shouldRefreshAllTagList ? 1 : 0}`).then((f) => {
         f.json().then(r => {
-            console.log(r);
             document.querySelector("#current-tags-box").innerHTML = "";
-            r.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#current-tags-box", {
-                RemoveParams: { trackID }
+            r.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, trackID, "#current-tags-box", {
+                RemoveParams: true
             }));
             if(r.allTags) {
                 document.querySelector("#all-tags-box").innerHTML = "";
-                r.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, "#all-tags-box", {
-                    AddParams: { trackID },
-                    DeleteParams: { trackID }
+                r.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, trackID, "#all-tags-box", {
+                    AddParams: true,
+                    DeleteParams: true,
+                    EditParams: true
                 }, r.currentTags.filter(ct => ct.TagName == t.TagName).length > 0));
-                console.log("Refreshed all tags list");
             }
         });
     });

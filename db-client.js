@@ -204,9 +204,21 @@ export async function GetTagUsageCount(tagName) {
         WHERE TagName = $s
     `, { $s: tagName });
 
+    const allResult = await myDb.all(`
+        SELECT COUNT(*) FROM TaggedAll
+        WHERE TagName = $s
+    `, { $s: tagName });
+
+    const tagResult = await myDb.all(`
+        SELECT COUNT(*) FROM Tags
+        WHERE TagName = $s
+    `, { $s: tagName });
+
     return {
         trackCount: trackTagResult,
-        artistCount: artistTagResult
+        artistCount: artistTagResult,
+        allCount: allResult,
+        tagCount: tagResult
     };
 }
 
@@ -226,4 +238,45 @@ export async function DeleteTag(tagName) {
         DELETE FROM Tags
         WHERE TagName = $s
     `, { $s: tagName });
+}
+
+export async function UpdateTag(tagName, newTagName) {
+    const myDb = await GetDBCached();
+    const updateTag = myDb.all(`
+        UPDATE Tags
+        SET TagName = $n
+        WHERE TagName = $s
+    `, { $s: tagName, $n: newTagName });
+
+    const updateTracks = myDb.all(`
+        UPDATE TaggedTracks
+        SET TagName = $n
+        WHERE TagName = $s
+    `, { $s: tagName, $n: newTagName });
+
+    const updateArtists = myDb.all(`
+        UPDATE TaggedArtists
+        SET TagName = $n
+        WHERE TagName = $s
+    `, { $s: tagName, $n: newTagName });
+}
+
+export async function MergeTags(tagName, newTagName) {
+    const myDb = await GetDBCached();
+    const deleteTag = await myDb.all(`
+        DELETE FROM Tags
+        WHERE TagName = $s
+    `, { $s: tagName });
+
+    const updateTracks = myDb.all(`
+        UPDATE TaggedTracks
+        SET TagName = $n
+        WHERE TagName = $s
+    `, { $s: tagName, $n: newTagName });
+
+    const updateArtists = myDb.all(`
+        UPDATE TaggedArtists
+        SET TagName = $n
+        WHERE TagName = $s
+    `, { $s: tagName, $n: newTagName });   
 }
