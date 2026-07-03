@@ -10,7 +10,10 @@
     <body>
         <div id="parent">
         <div id="left-pane">
-        <h2><a href="../landing.html"><img src="../../tags.ico" height="32" width="32"></a> Tagging</h2>
+        <div class="header">
+            <a href="../landing.html"><img src="../../tags.ico" height="32" width="32"></a>
+            <h2>Tagging</h2>
+        </div>
         <summary>
             <details>
                 <p>Search for an existing tag or create a new tag using the inputs below. All tag objects on this side of the page can be clicked to be added to the current tack (if not already present). Tags with the &Cross; can be removed from this track using that button, but those tags will remain an "existing tag" until you use the right side of this page to edit or delete them.</p>
@@ -22,7 +25,7 @@
             <source id="audio-path" src="$$$PATH$$$" type="audio/mpeg">
             Your browser does not support the audio element.
         </audio>
-        <form>
+        <form class="input-form">
             <a id="previous-track">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-skip-backward-fill" viewBox="0 0 16 16">
                 <path d="M.5 3.5A.5.5 0 0 0 0 4v8a.5.5 0 0 0 1 0V8.753l6.267 3.636c.54.313 1.233-.066 1.233-.697v-2.94l6.267 3.636c.54.314 1.233-.065 1.233-.696V4.308c0-.63-.693-1.01-1.233-.696L8.5 7.248v-2.94c0-.63-.692-1.01-1.233-.696L1 7.248V4a.5.5 0 0 0-.5-.5"/>
@@ -44,7 +47,9 @@
             <p id="new-tag-blurb" style="display: none">Add New Tag (Shift Enter):</p>
             <div id="new-tag-display"></div>
         </form>
-        <h2>Current Tags on this Track</h2>
+        <div class="header">
+            <h2>Current Tags on this Track</h2>
+        </div>
         <p>Tags outlined in red were added as artist tags. Deleting or editing those tags will result in changes to multiple tracks.</p>
         <div id="current-tags-box">
         </div>
@@ -55,7 +60,9 @@
         </button>
         </div>
         <div id="right-pane">
-            <h2>All Existing Tags</h2>
+            <div class="header">
+                <h2>All Existing Tags</h2>
+            </div>
             <p>Click on any of these tags to add them to the current track rather than manually typing them in. Tags already present on the current track will be grayed out / disabled. Deleting a track on this side of the page (by clicking the &Cross; button) will delete the tag entirely, removing it from all tracks previous associated with it. The same goes for editing tags, those changes will apply to all tracks which used that tag.</p>
             <div id="all-tags-box"></div>
         </div>

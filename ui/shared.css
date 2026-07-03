@@ -1,6 +1,8 @@
 :root {
-    --title-color: darkred;
-    --accent-color: rgb(54, 54, 54);
+    --accent-color: black;
+    --header-height: 50px;
+    --green: #55b400;
+    --yellow: #fbfb00;
 }
 
 body {
@@ -8,9 +10,58 @@ body {
 }
 
 h1, h2 {
-    color: var(--title-color);
+    color: var(--yellow);
 }
 
 label {
     color: var(--accent-color);
+}
+
+.header:has(a) {
+    h2 {
+        margin-left: 55px;
+    }
+}
+
+.header {
+    border-right: var(--header-height) solid transparent;
+    border-top: var(--header-height) solid black;
+    width: fit-content;
+    margin-left: -8px;
+    margin-top: -8px;
+
+    a {
+        display: inline-block;
+        margin-top: -40px;
+        margin-left: 15px;
+        height: 0;
+    }
+
+    h2, h3, h4 {
+        display: block;
+        margin-top: -39px;
+        height: 0;
+        margin-left: 15px;
+        color: var(--yellow);
+    }
+}
+
+.header:has(h4) {
+    border-right: calc(var(--header-height) - 20px) solid transparent;
+    border-top: calc(var(--header-height) - 20px) solid black;
+
+    h4 {
+        margin-top: -23px;
+    }
+}
+
+.header:after {
+    content: "";
+    width: 100%;
+    height: calc(var(--header-height) + 10px);
+    background: linear-gradient(-45deg, var(--green), var(--green), var(--yellow));
+    display: block;
+    position: absolute;
+    z-index: -1;
+    top: 0;
 }

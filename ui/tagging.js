@@ -166,7 +166,7 @@ function AddTagToUI(tagName, isArtist, trackID, boxSelector, endpoints = undefin
                 fetch(`http://localhost:8080/api/tag/usage/${encodeURI(tagName)}`).then((f) => {
                     f.json().then(r => {
                         const baseMessage = `Enter new tag text, or cancel. Affects ${r.trackCount} track tags, ${r.artistCount} artist tags, ${r.allCount} total tracks.`;
-                        let newTag = prompt(baseMessage);
+                        let newTag = prompt(baseMessage, tagName);
                         if(newTag !== null) {
                             fetch(`http://localhost:8080/api/tag/usage/${encodeURI(newTag)}`).then((f2) => {
                                 f2.json().then(r2 => {
