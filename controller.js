@@ -1,5 +1,25 @@
-import { AddTagForTrack, DeleteTag, EvidenceOfInstallation, GetAllTags, GetAllTagsForTrack, GetAllTrackData, GetCurrentVersionOfInstallation, GetLandingLinkData, GetNextPreviousTrackID, GetTagUsageCount, MergeTags, RemoveTag, SearchAvailableTags, SearchTracks, UpdateTag } from "./db-client.js";
-import { BasicGetFile, GetConfigJSONCached } from "./utilities.js";
+import {
+    AddTagForTrack,
+    DeleteTag,
+    EvidenceOfInstallation,
+    ExecuteRaw,
+    GetAllTags,
+    GetAllTagsForTrack,
+    GetAllTrackData,
+    GetCurrentVersionOfInstallation,
+    GetLandingLinkData,
+    GetNextPreviousTrackID,
+    GetTagUsageCount,
+    MergeTags,
+    RemoveTag,
+    SearchAvailableTags,
+    SearchTracks,
+    UpdateTag
+} from "./db-client.js";
+import {
+    BasicGetFile,
+    GetConfigJSONCached
+} from "./utilities.js";
 
 /**
  * [
@@ -134,5 +154,17 @@ export async function IsInstalled() {
         installed: evidenceResult?.length > 0,
         existingVersion: versionResult?.length > 0 ? versionResult[0].InfoValue : undefined,
         presentVersion: versionFile.presentVersion
+    };
+}
+
+export async function ExecuteRawQuery(query, limitOrTrue) {
+    const result = await ExecuteRaw(query, limitOrTrue);
+    let limited = result.limited;
+    if(limitOrTrue === true || result.results.length < limitOrTrue || (result.results.length == limitOrTrue && !result.limited)) {
+        limited = false;
+    }
+    return {
+        limited: limited,
+        results: result.results
     };
 }

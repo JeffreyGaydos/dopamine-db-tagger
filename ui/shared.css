@@ -76,3 +76,27 @@ div.error:has(*) {
         color: red;
     }
 }
+
+#parent {
+    display: flex;
+    #left-pane, #right-pane {
+        min-width: 50%;
+        margin-left: -8px;
+        margin-top: -8px;
+        padding-left: 8px;
+        > *:first-child {
+            margin-top: 0;
+        }
+        flex: 1;
+        min-height: calc(100dvh - 16px); /*body has default styling of 8px margin*/
+    }
+
+    #right-pane {
+        border-left: 3px dashed var(--accent-color);
+        padding-left: 5px;
+    }
+
+    #right-pane .header:after {
+        width: 50%;
+    }
+}

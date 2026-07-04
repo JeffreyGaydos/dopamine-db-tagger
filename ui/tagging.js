@@ -103,7 +103,7 @@ function AddTagToUI(tagName, isArtist, trackID, boxSelector, endpoints = undefin
         tagElement.addEventListener("click", () => {
             if(!addLoading) {
                 addLoading = true;
-                fetch(`http://localhost:8080/api/tag/add/${trackID}/${encodeURI(tagName)}`).then((f) => {
+                fetch(`http://localhost:8080/api/tag/add/${trackID}/${encodeURIComponent(tagName)}`).then((f) => {
                     f.json().then(r => {
                         HandleAddTagResponse(r, trackID);
                         addLoading = false;
@@ -120,7 +120,7 @@ function AddTagToUI(tagName, isArtist, trackID, boxSelector, endpoints = undefin
             xButton.addEventListener("click", () => {
                 if(!removeLoading) {
                     removeLoading = true;
-                    fetch(`http://localhost:8080/api/tag/remove/${trackID}/${encodeURI(tagName)}`).then((f) => {
+                    fetch(`http://localhost:8080/api/tag/remove/${trackID}/${encodeURIComponent(tagName)}`).then((f) => {
                         HandleRemoveTagResponse(trackID);
                         removeLoading = false;
                     });
@@ -133,10 +133,10 @@ function AddTagToUI(tagName, isArtist, trackID, boxSelector, endpoints = undefin
                 e.stopPropagation();
                 if(!deleteLoading) {
                     deleteLoading = true;
-                    fetch(`http://localhost:8080/api/tag/usage/${encodeURI(tagName)}`).then((f) => {
+                    fetch(`http://localhost:8080/api/tag/usage/${encodeURIComponent(tagName)}`).then((f) => {
                         f.json().then(r => {
                             if(confirm(`Confirm deletion of tag, affects ${r.trackCount} track tags, ${r.artistCount} artist tags, ${r.allCount} total tracks.`)) {
-                                fetch(`http://localhost:8080/api/tag/delete/${encodeURI(tagName)}`).then((f) => {
+                                fetch(`http://localhost:8080/api/tag/delete/${encodeURIComponent(tagName)}`).then((f) => {
                                     HandleDeleteTagResponse(trackID);
                                     deleteLoading = false;
                                 });
@@ -163,15 +163,15 @@ function AddTagToUI(tagName, isArtist, trackID, boxSelector, endpoints = undefin
             e.stopPropagation();
             if(!editLoading) {
                 editLoading = true;
-                fetch(`http://localhost:8080/api/tag/usage/${encodeURI(tagName)}`).then((f) => {
+                fetch(`http://localhost:8080/api/tag/usage/${encodeURIComponent(tagName)}`).then((f) => {
                     f.json().then(r => {
                         const baseMessage = `Enter new tag text, or cancel. Affects ${r.trackCount} track tags, ${r.artistCount} artist tags, ${r.allCount} total tracks.`;
                         let newTag = prompt(baseMessage, tagName);
                         if(newTag !== null) {
-                            fetch(`http://localhost:8080/api/tag/usage/${encodeURI(newTag)}`).then((f2) => {
+                            fetch(`http://localhost:8080/api/tag/usage/${encodeURIComponent(newTag)}`).then((f2) => {
                                 f2.json().then(r2 => {
                                     if(r2.tagCount === 0) {
-                                        fetch(`http://localhost:8080/api/tag/edit/${encodeURI(tagName)}/${encodeURI(newTag)}`).then((f3) => {
+                                        fetch(`http://localhost:8080/api/tag/edit/${encodeURIComponent(tagName)}/${encodeURIComponent(newTag)}`).then((f3) => {
                                             HandleEditTagResponse(trackID);
                                         });
                                     } else {
@@ -206,8 +206,8 @@ function SearchInterval(trackID) {
         previousSearchQuery = queryString;
         return;
     }
-    console.log(`Searching for tag "${queryString}" (${encodeURI(queryString)})`);
-    fetch(`http://localhost:8080/api/search/tags/${trackID}/${encodeURI(queryString)}`).then((f) => {
+    console.log(`Searching for tag "${queryString}" (${encodeURIComponent(queryString)})`);
+    fetch(`http://localhost:8080/api/search/tags/${trackID}/${encodeURIComponent(queryString)}`).then((f) => {
         f.json().then(r => {
             srBox.innerHTML = ""; //clear existing results
             ntDisplay.innerHTML = "";

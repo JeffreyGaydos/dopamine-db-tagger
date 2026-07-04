@@ -1,0 +1,91 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="shared.css">
+        <link rel="stylesheet" href="playlists.css">
+        <link rel="icon" href="../../tags.ico">
+        <script src="playlists.js"></script>
+        <script src="shared.js"></script>
+        <title>Playlist Generation</title>
+    </head>
+    <body>
+        <div id="parent">
+        <div id="left-pane">
+            <div class="header">
+                <a href="./landing.html"><img src="../tags.ico" height="32" width="32"></a>
+                <h2>Playlist Generation</h2>
+            </div>
+            <p>This playlist generator works in tandem with the query you input on the right side of this page. Given that query, it will look for the TrackID column that you've queried for, and gather the necessary information (filename, folder, etc.) to create a playlist for a specific platform.</p>
+            <p>The generator will create a playlist using everything after the first FROM in your query, so be careful not to include any logic in the SELECT columns themselves.</p>
+            <form>
+                <label for="trackid-alias">Fully Qualified TrackID Alias:</label>
+                <input type="text" id="trackid-alias" value="TrackID"></input>
+                <br/><br/>
+                <label for="playlist-type">Playlist Type:</label>
+                <select id="playlist-type">
+                    <option value="-1" disabled style="display: none;">Select an Playlist file type...</option>
+                    <option value="m3u-r">.m3u/.m3u8 Relative (Android)</option>
+                    <option value="m3u-a">.m3u/.m3u8 Absolute (Windows)</option>
+                </select>
+                <br/><br/>
+                <label>Path Replacements (Regex enabled):</label>
+                <br/>
+                <span>Replace </span>
+                <input type="text" id="replace-from"></input>
+                <span> with </span>
+                <input type="text" id="replace-to"></input>
+                <br/><br/>
+                <label for="playlist-name">Playlist Title:</label>
+                <input type="text" id="playlist-name"></input>
+                <br/><br/>
+                <button id="generate-playlist">Generate Playlist File</button>
+            </form>
+            <br/>
+            <div class="header">
+                <h3>Playlist Generation Results:</h3>
+            </div>
+            <textarea id="playlist-results"></textarea>
+            <p>Results are limited to the top 20 by default</p>
+            <button id="download" disabled>Download full Playlist</button>
+        </div>
+        <div id="right-pane">
+            <div class="header">
+                <h3>Query Database Raw:</h3>
+            </div>
+            <label for="query-type">Query Type:</label>
+            <br/>
+            <select id="query-type">
+                <option value="-1" disabled style="display: none;">Select Query type...</option>
+                <option value="raw">Raw SQL</option>
+                <option value="guided">Guided Query</option>
+            </select>
+            <p>Here you can query for a set of tracks using either the tag schema created by this system or the data already created by Dopamine. The SQL connection is readonly, but you could still lock up the database if you are quering it while actively using Dopamine or your browser may crash depending on the complexity of the query.</p>
+            <p>You can find the documentation for SQLite <a href="https://sqlite.org/docs.html">here</a>.</p>
+            <p>The schema of the Dopamine database and the tag schema can be found <a href="./schema.html">here</a>.</p>
+            <form id="guided-query">
+                TBD
+            </form>
+            <form id="sql-query">
+                <div>
+                    <label for="query">Raw SQLite Query:</label>
+                    <br/>
+                    <textarea id="query"></textarea>
+                    <br/><br/>
+                    <button id="execute">Execute Query</button>
+                </div>
+                <div>
+                    <label>Errors:</label>
+                    <br/>
+                    <div class="error"></div>
+                </div>
+            </form>
+            <br/>
+            <div class="header">
+                <h3>Raw Query Results:</h3>
+            </div>
+            <div id="query-results"></div>
+            <p>Results are limited to the top 20 by default</p>
+            <button title="querying for more than 1000 rows often crashes your browser or the server. Use where TrackID > ## conditions to paginate if needed" id="full-results" disabled>Get First 1000 Results</button>            
+        </div>
+        </div>
+    </body>
+</html>

@@ -13,6 +13,5 @@ export default async function Uninstall() {
 
         const deployScript = await BasicGetFile('./SchemaRollback.sql');
         await db.exec(deployScript);
-        console.log("Uninstalled!");
     })();
 }

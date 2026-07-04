@@ -31,8 +31,27 @@ async function GetDBCached() {
     }
 }
 
+let rodb = undefined;
+
+async function GetRODBCached() {
+    if(rodb) return rodb;
+
+    try {
+        rodb = await open({
+            filename: await GetDBPathCached(),
+            driver: sqlite3.Database,
+            mode: sqlite3.OPEN_READONLY
+        });
+        return rodb;
+    }
+    catch(e) {
+        return false;
+    }
+}
+
 export function DBClient_BustCaches() {
     db = undefined;
+    rodb = undefined;
     dbPath = undefined;
 }
 
@@ -322,4 +341,23 @@ export async function GetCurrentVersionOfInstallation() {
     `);
 
     return versionResult;
+}
+
+export async function ExecuteRaw(query, limitOrTrueForAll) {
+    const myDb = await GetRODBCached();
+    if(!myDb) return undefined;
+    let theQuery = query;
+    let limited = false;
+    if(limitOrTrueForAll !== true && !theQuery.includes("LIMIT ")) {
+        theQuery += ` LIMIT ${limitOrTrueForAll}`;
+        limited = true;
+    }
+    const results = await myDb.all(`
+        ${theQuery}
+    `);    
+
+    return {
+        results,
+        limited
+    };
 }
