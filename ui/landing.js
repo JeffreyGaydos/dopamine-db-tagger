@@ -46,8 +46,8 @@ function Landing_AddHandlers() {
         e.preventDefault();
         const queryString = document.querySelector("#start-track").value;
         if(queryString == "") return;
-        console.log(`Searching for track "${queryString}" (${encodeURI(queryString)})`);
-            fetch(`http://localhost:8080/api/search/tracks/${encodeURI(queryString)}`).then((f) => {
+        console.log(`Searching for track "${queryString}" (${encodeURIComponent(queryString)})`);
+            fetch(`http://localhost:8080/api/search/tracks/${encodeURIComponent(queryString)}`).then((f) => {
                 f.json().then(r => {
                     const srBox = document.querySelector("#search-results-box");
                     srBox.innerHTML = ""; //clear existing results

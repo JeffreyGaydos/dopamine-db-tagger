@@ -139,5 +139,4 @@ function AddErrorBox(errorMessage) {
     } else {
         errorBox.innerHTML = "";
     }
-    
 }

@@ -1,0 +1,49 @@
+#query {
+    width: 500px;
+    height: 250px;
+}
+
+#playlist-results {
+    width: calc(100% - 18px);
+    height: 350px;
+}
+
+#guided-query {
+    display: none;
+}
+
+form#sql-query {
+    div {
+        display: inline-block;
+    }
+    div:nth-child(2) {
+        vertical-align: top;
+    }
+
+    div:nth-child(3) {
+        vertical-align: top;
+    }
+}
+
+table {
+    background-color: black;
+    td, th {
+        background-color: white;
+    }
+    tr:nth-child(odd) td {
+        background-color: #EEE;
+    }
+    tr:nth-child(even) td {
+        background-color: #DDD;
+    }
+}
+
+.error {
+    box-sizing: border-box;
+    min-width: 400px;
+    max-width: 400px;
+}
+
+#query-results {
+    overflow: auto;
+}

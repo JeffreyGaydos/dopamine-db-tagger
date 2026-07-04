@@ -67,7 +67,9 @@ Happy Tagging!
 
 ## Playlist Generation
 
-TBD
+This tool, found at `localhost:8080/ui/playlists.html` can operate completely independently of the tag system, but requires the configs to be set up so that the database can be queried. The right pane of this page uses a read-only connection to let you directly query all data created by either Dopamine or this tagging system. Once a query is input and runs without error, the left pane of the page will use that query in addition to some other settings and tweaks to generate playlist files. Note that queries must have a column named "TrackID" and that column must refer to the actual `TrackID` in the Dopamine database on the `Track` table. Result previews are also available but limited to 20, then 1000 rows to avoid crashing your browser. If you need to see more than 1000 rows, you can paginate the query using typical SQLite syntax.
+
+<img src="./readme_assets/Playlists.png">
 
 ## Why not just add this to Dopamine?
 

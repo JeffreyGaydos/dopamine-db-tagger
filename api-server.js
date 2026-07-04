@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled } from './controller.js';
+import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled, ExecuteRawQuery } from './controller.js';
 import Install from './install.js';
 import Uninstall from './uninstall.js';
 import { GetConfigJSONCached, SetConfigJSON } from './utilities.js';
@@ -32,14 +32,14 @@ async function RouteAPIEndpoints(url) {
         case "search":
             switch(urlBits[2]) {
                 case "tracks":
-                    const resultTrack = await GetTrackSearchResults(decodeURI(urlBits[3]));
+                    const resultTrack = await GetTrackSearchResults(decodeURIComponent(urlBits[3]));
                     return {
                         apiData: resultTrack,
                         modified: true
                     };
                     break;
                 case "tags":
-                    const resultTag = await GetAvailableTagSearchRestults(decodeURI(urlBits[4]), urlBits[3]);
+                    const resultTag = await GetAvailableTagSearchRestults(decodeURIComponent(urlBits[4]), urlBits[3]);
                     return {
                         apiData: resultTag,
                         modified: true
@@ -49,14 +49,14 @@ async function RouteAPIEndpoints(url) {
         case "tag":
             switch(urlBits[2]) {
                 case "add":
-                    const addResult = await AddTag(decodeURI(urlBits[4]), urlBits[3]);
+                    const addResult = await AddTag(decodeURIComponent(urlBits[4]), urlBits[3]);
                     return {
                         apiData: addResult,
                         modified: true
                     };
                     break;
                 case "remove":
-                    await RemoveTagFromTrack(decodeURI(urlBits[4]), urlBits[3]);
+                    await RemoveTagFromTrack(decodeURIComponent(urlBits[4]), urlBits[3]);
                     return {
                         apiData: undefined,
                         modified: true
@@ -66,7 +66,7 @@ async function RouteAPIEndpoints(url) {
                     if(!urlBits[3] || !urlBits[4] || !urlBits[5]) {
                         console.log("Expected one or more missing parameters: /edit/tagName/newText/newColor");
                     }
-                    const editResult = await EditTag(decodeURI(urlBits[3]), decodeURI(urlBits[4]));
+                    const editResult = await EditTag(decodeURIComponent(urlBits[3]), decodeURIComponent(urlBits[4]));
                     return {
                         apiData: editResult,
                         modified: true
@@ -74,7 +74,7 @@ async function RouteAPIEndpoints(url) {
                     break;
                     break;
                 case "delete":
-                    const deleteResult = await DeleteTagEverywhere(decodeURI(urlBits[3]));
+                    const deleteResult = await DeleteTagEverywhere(decodeURIComponent(urlBits[3]));
                     return {
                         apiData: deleteResult,
                         modified: true
@@ -88,14 +88,14 @@ async function RouteAPIEndpoints(url) {
                     };
                     break;
                 case "usage":
-                    const usageResult = await GetDeletionCounts(decodeURI(urlBits[3]));
+                    const usageResult = await GetDeletionCounts(decodeURIComponent(urlBits[3]));
                     return {
                         apiData: usageResult,
                         modified: true
                     };
                     break;
                 case "merge":
-                    const mergeResult = await EditTag(decodeURI(urlBits[3]), decodeURI(urlBits[4]));
+                    const mergeResult = await EditTag(decodeURIComponent(urlBits[3]), decodeURIComponent(urlBits[4]));
                     return {
                         apiData: mergeResult,
                         modified: true
@@ -156,6 +156,32 @@ async function RouteAPIEndpoints(url) {
                     }
                     break;
             }
+        case "query":
+            switch(urlBits[2]) {
+                case "raw":
+                try {
+                    const queryResult = await ExecuteRawQuery(decodeURIComponent(urlBits[3]), urlBits[4] === "true" ? true : urlBits[4]);
+                    return {
+                        apiData: {
+                            error: undefined,
+                            results: queryResult.results,
+                            limited: queryResult.limited
+                        },
+                        modified: true
+                    };
+                } catch (e) {
+                    return {
+                        apiData: {
+                            error: e,
+                            results: [],
+                            limited: undefined
+                        },
+                        modified: true
+                    };
+                }
+                break;   
+            }
+            break;
     }
     return {
         apiData: "",
