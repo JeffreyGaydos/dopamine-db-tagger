@@ -7,6 +7,7 @@ import { GetWebResource } from './web-server.js';
 import { GetApiResource } from './api-server.js';
 import fs from 'node:fs';
 
+// const hostname = '0.0.0.0';
 const hostname = '127.0.0.1';
 const port = 8080;
 

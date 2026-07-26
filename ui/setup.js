@@ -11,7 +11,6 @@ window.addEventListener("DOMContentLoaded", () => {
                     AddErrorBox(undefined);
                 } else {
                     if(confirm(`Upgrading to this version includes breaking changes: ${r}. Confirm to proceed with the installation anyways`)) {
-                        console.log("YOO");
                         fetch(`http://localhost:8080/api/setup/install/force`).then((f2) => {
                             f2.json().then(r2 => {
                                 console.log(r2);
