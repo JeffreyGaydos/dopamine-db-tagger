@@ -3,3 +3,5 @@ This folder has all the "migrations" for each kind of upgrade. So if you are goi
 The vX.X scripts are all versions combined into the minimumm-operation final state of the database. The vX.X deploy scripts should only be able to be correctly run if the DB schema has been completely uninstalled. The vX.X rollback scripts, however, should be able to be run regardless of which version the user is currently on, to completely uninstall all schema objects.
 
 These versions do NOT correspond with the version of the tagger itself (if that is something we start deonting somewhere)
+
+The versions.json file is responsible for telling users when data loss or other "breaking" changes will occur during an upgrade. This does not include additive changes.
