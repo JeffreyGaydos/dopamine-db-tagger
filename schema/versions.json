@@ -1,6 +1,10 @@
 {
-    "presentVersion": "1.0",
+    "presentVersion": "1.1",
     "upgradeNotes": [
+        {
+            "Version": "1.0",
+            "Notes": null
+        },
         {
             "Version": "0.0",
             "Notes": null

@@ -5,3 +5,5 @@ The vX.X scripts are all versions combined into the minimumm-operation final sta
 These versions do NOT correspond with the version of the tagger itself (if that is something we start deonting somewhere)
 
 The versions.json file is responsible for telling users when data loss or other "breaking" changes will occur during an upgrade. This does not include additive changes.
+
+You do NOT need to set the version of the schema in the "info" table, the API will handle that automatically during each installation, so don't mess with versions in the deploy script itself.

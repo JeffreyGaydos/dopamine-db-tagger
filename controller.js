@@ -148,7 +148,7 @@ export async function IsInstalled() {
     if(evidenceResult?.length > 0) {
         versionResult = await GetCurrentVersionOfInstallation();
     }
-    let versionFile = await BasicGetFile("./versions.json");
+    let versionFile = await BasicGetFile("./schema/versions.json");
     versionFile = JSON.parse(versionFile);
     return {
         installed: evidenceResult?.length > 0,

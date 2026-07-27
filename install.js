@@ -12,26 +12,44 @@ export default async function Install(force=false) {
         driver: sqlite3.Database
     });
 
-    let versionFile = await BasicGetFile("./versions.json");
+    let versionFile = await BasicGetFile("./schema/versions.json");
     versionFile = JSON.parse(versionFile);
 
     const evidence = await EvidenceOfInstallation();
 
     if(evidence?.length > 0) {
-        const existingVersion = await db.all(`SELECT InfoValue FROM DBTaggerInfo WHERE InfoName = 'Version'`);
+        const existingVersion = (await db.all(`SELECT InfoValue FROM DBTaggerInfo WHERE InfoName = 'Version'`))[0].InfoValue;
         if(existingVersion && !force) {
             if(
-                versionFile.upgradeNotes.filter(n => n.Version == existingVersion[0].InfoValue).length > 0
-                && versionFile.upgradeNotes.filter(n => n.Version == existingVersion[0].InfoValue)[0].Notes !== null
-                && versionFile.presentVersion != existingVersion[0]
+                versionFile.upgradeNotes.filter(n => n.Version == existingVersion).length > 0
+                && versionFile.upgradeNotes.filter(n => n.Version == existingVersion)[0].Notes !== null
+                && versionFile.presentVersion != existingVersion
             ) {
-                return versionFile.upgradeNotes.filter(n => n.Version == existingVersion[0].InfoValue)[0].Notes;
+                return versionFile.upgradeNotes.filter(n => n.Version == existingVersion)[0].Notes;
             }
         }
+
+        let versionsToExecuteOrdered = [];
+        for(var i = 0; i < versionFile.upgradeNotes.length; i++) {
+            if(versionFile.upgradeNotes[i].Version != existingVersion) {
+                versionsToExecuteOrdered.push(versionFile.upgradeNotes[i].Version);
+            } else {                
+                versionsToExecuteOrdered.push(versionFile.presentVersion);
+                break; //relies on the versions.json file being deliberately ordered
+            }
+        }
+        versionsToExecuteOrdered = versionsToExecuteOrdered.filter(v => v != '0.0').reverse();
+        console.log(versionsToExecuteOrdered);
+
+        for(var v = 0; v < versionsToExecuteOrdered.length; v++) {
+            const deployScript = await BasicGetFile(`./schema/v${versionsToExecuteOrdered[v]}_Deploy.sql`);
+            await db.exec(deployScript);
+        }
+    } else {
+        const deployScript = await BasicGetFile('./schema/vX.X_Deploy.sql');
+        await db.exec(deployScript);
     }
 
-    const deployScript = await BasicGetFile('./SchemaDeploy.sql');
-    await db.exec(deployScript);
     await db.exec(`DELETE FROM DBTaggerInfo WHERE InfoName = 'Version'`);
     await db.all(`
         INSERT INTO DBTaggerInfo

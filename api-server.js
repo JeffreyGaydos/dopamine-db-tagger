@@ -106,12 +106,11 @@ async function RouteAPIEndpoints(url) {
             switch(urlBits[2]) {
                 case "install":
                     let installResult = undefined;
-                    console.log(urlBits[3]);
                     try {
-                        if(urlBits[3]) {
-                            installResult = await Install(true);    
+                        if(urlBits[4]) {
+                            installResult = await Install(urlBits[3], true);
                         } else {
-                            installResult = await Install();
+                            installResult = await Install(urlBits[3]);
                         }
                     } catch(e) {
                         

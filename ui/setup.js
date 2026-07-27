@@ -1,8 +1,10 @@
+let newVersion = 0.0;
+
 window.addEventListener("DOMContentLoaded", () => {
     UpdateInstallationDetails();
     PopulateExistingConfigs();
     document.querySelector("#install").addEventListener("click", () => {
-        fetch(`http://localhost:8080/api/setup/install`).then((f) => {
+        fetch(`http://localhost:8080/api/setup/install/${newVersion}`).then((f) => {
             f.json().then(r => {
                 console.log(r);
                 if(r === true) {
@@ -11,7 +13,7 @@ window.addEventListener("DOMContentLoaded", () => {
                     AddErrorBox(undefined);
                 } else {
                     if(confirm(`Upgrading to this version includes breaking changes: ${r}. Confirm to proceed with the installation anyways`)) {
-                        fetch(`http://localhost:8080/api/setup/install/force`).then((f2) => {
+                        fetch(`http://localhost:8080/api/setup/install/${newVersion}/force`).then((f2) => {
                             f2.json().then(r2 => {
                                 console.log(r2);
                                 if(r2 === true) {
@@ -95,10 +97,11 @@ function UpdateInstallationDetails() {
 
             document.querySelectorAll(".existing-version").forEach(e => {
                 e.innerText = r.existingVersion;
-            })
+            });
             document.querySelectorAll(".new-version").forEach(e => {
                 e.innerText = r.presentVersion;
-            })
+            });
+            newVersion = r.presentVersion;
         });        
     });
 }
