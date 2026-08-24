@@ -7,3 +7,5 @@ These versions do NOT correspond with the version of the tagger itself (if that 
 The versions.json file is responsible for telling users when data loss or other "breaking" changes will occur during an upgrade. This does not include additive changes.
 
 You do NOT need to set the version of the schema in the "info" table, the API will handle that automatically during each installation, so don't mess with versions in the deploy script itself.
+
+In practice, the V0.0 rollback notes are not used, but could be nice if the user somehow messes up the state enough to do that.

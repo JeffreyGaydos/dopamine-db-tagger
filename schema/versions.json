@@ -2,13 +2,18 @@
     "presentVersion": "1.1",
     "upgradeNotes": [
         {
+            "Version": "1.1",
+            "DeployingToHereNotes": null,
+            "RollingBackToHereNotes": null
+        },
+        {
             "Version": "1.0",
-            "Notes": null,
+            "DeployingToHereNotes": null,
             "RollingBackToHereNotes": "All color data for all tags will be lost permanently, and re-installing the current version will not restore those colors"
         },
         {
             "Version": "0.0",
-            "Notes": null,
+            "DeployingToHereNotes": null,
             "RollingBackToHereNotes": "This is equivalent to uninstalling the schema completely. All tag data will be deleted and unrecoverable."
         }
     ]

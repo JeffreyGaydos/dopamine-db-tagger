@@ -150,10 +150,13 @@ export async function IsInstalled() {
     }
     let versionFile = await BasicGetFile("./schema/versions.json");
     versionFile = JSON.parse(versionFile);
+    const existingVersionOrUndefined = versionResult?.length > 0 ? versionResult[0].InfoValue : undefined;
+    
     return {
         installed: evidenceResult?.length > 0,
-        existingVersion: versionResult?.length > 0 ? versionResult[0].InfoValue : undefined,
-        presentVersion: versionFile.presentVersion
+        existingVersion: existingVersionOrUndefined,
+        presentVersion: versionFile.presentVersion,
+        allVersions: versionFile.upgradeNotes.map(u => u.Version)
     };
 }
 

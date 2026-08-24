@@ -11,7 +11,8 @@ export default async function Uninstall() {
             driver: sqlite3.Database
         });
 
-        const deployScript = await BasicGetFile('./SchemaRollback.sql');
+        // Relies on us following the convention that the vX.X_Rollback script can be used to uninstall from any version
+        const deployScript = await BasicGetFile('./schema/vX.X_Rollback.sql');
         await db.exec(deployScript);
     })();
 }
