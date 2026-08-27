@@ -75,5 +75,31 @@
             <div id="all-tags-box"></div>
         </div>
         </div>
+        <dialog id="edit-modal" closedby="any">
+            <div class="header">
+                <h2>Edit Tag</h2>
+            </div>
+            <div class="header-r">
+                <button command="close" commandfor="edit-modal">&Cross;</button>
+            </div>
+            <p>Modifying this tag will update X number of tracks</p>
+            <details>
+                <summary>Show full list of modified tracks:</summary>
+                <ul>
+                    <li>Loading...</li>
+                </ul>
+            </details>
+            <br/><br/>
+            <form>
+                <label for="tag-name">Tag Name:</label>
+                <input id="tag-name" type="text" />
+                <br/><br/>
+                <label for="tag-color">Tag Color:</label>
+                <input id="tag-color" type="color" />
+                <br/><br/>
+                <button id="save-edit">Submit</button>
+                <button id="cancel-edit" command="close" commandfor="edit-modal" type="button">Cancel</button>
+            </form>
+        </dialog>
     </body>
 </html>

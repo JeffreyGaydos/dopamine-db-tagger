@@ -15,10 +15,10 @@ window.addEventListener("DOMContentLoaded", () => {
     RenderMetadata(responseJson);
     AddHandlers(responseJson);
     console.log(responseJson.currentTags[0]);
-    responseJson.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, responseJson.TrackID, "#current-tags-box", {
+    responseJson.currentTags.forEach(t => AddTagToUI(t.TagName, "#00F", t.IsArtistTag, responseJson.TrackID, "#current-tags-box", {
         RemoveParams: true
     }));
-    responseJson.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, responseJson.TrackID, "#all-tags-box", {
+    responseJson.allTags.forEach(t => AddTagToUI(t.TagName, "#00F", t.IsArtistTag, responseJson.TrackID, "#all-tags-box", {
         AddParams: true,
         DeleteParams: true,
         EditParams: true
@@ -93,7 +93,7 @@ let removeLoading = false;
 let deleteLoading = false;
 let editLoading = false;
 
-function AddTagToUI(tagName, isArtist, trackID, boxSelector, endpoints = undefined, disabled=false) {
+function AddTagToUI(tagName, color, isArtist, trackID, boxSelector, endpoints = undefined, disabled=false) {
     const tagElement = document.createElement("BUTTON");
     tagElement.classList.add("tag");
     tagElement.setAttribute("ev", tagName);
@@ -152,6 +152,7 @@ function AddTagToUI(tagName, isArtist, trackID, boxSelector, endpoints = undefin
     }
 
     if(endpoints?.EditParams) {
+        const editModal = document.querySelector("#edit-modal");
         const eButton = document.createElement("BUTTON");
         eButton.classList.add("edit");
         eButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
@@ -165,7 +166,15 @@ function AddTagToUI(tagName, isArtist, trackID, boxSelector, endpoints = undefin
                 editLoading = true;
                 fetch(`http://localhost:8080/api/tag/usage/${encodeURIComponent(tagName)}`).then((f) => {
                     f.json().then(r => {
-                        const baseMessage = `Enter new tag text, or cancel. Affects ${r.trackCount} track tags, ${r.artistCount} artist tags, ${r.allCount} total tracks.`;
+                        const baseMessage = `Modifying the tag "${tagName}" will effect ${r.trackCount} track tags, ${r.artistCount} artist tags, ${r.allCount} total tracks.`;
+                        editModal.querySelector("p").innerText = baseMessage;
+                        editModal.querySelector("#tag-name").value = tagName;
+                        editModal.querySelector("#tag-color").value = color;
+                        editModal.show(); //cannot use invoker commands for this because of the heirarchy or something similar, not sure
+                        editLoading = false;
+                        //TODO: refactor the below, then remove the above editLoading = false; call. We need to switch the actual edit endpoint to a post and hook it into the form, which conveniently already posts with the form inputs for us
+                        //TODO: add links for the list of modified tracks so folks could click into them to confirm which other tags are on the affected tracks
+                        return;
                         let newTag = prompt(baseMessage, tagName);
                         if(newTag !== null) {
                             fetch(`http://localhost:8080/api/tag/usage/${encodeURIComponent(newTag)}`).then((f2) => {
@@ -215,7 +224,7 @@ function SearchInterval(trackID) {
             document.querySelector("#existing-tag-blurb").style.display = "none"            
             if(!r[0]?.ExactMatch) {
                 document.querySelector("#new-tag-blurb").style.display = "block";
-                AddTagToUI(queryString, document.querySelector("#is-artist").checked, trackID, "#new-tag-display", {
+                AddTagToUI(queryString, "#00F", document.querySelector("#is-artist").checked, trackID, "#new-tag-display", {
                     AddParams: true
                 });
             }
@@ -223,7 +232,7 @@ function SearchInterval(trackID) {
                 document.querySelector("#existing-tag-blurb").style.display = "block";
             }
             r.filter(e => e.AlreadyOnTrack == 0).forEach(sr => {
-                AddTagToUI(sr.TagName, document.querySelector("#is-artist").checked, trackID, "#search-results", {
+                AddTagToUI(sr.TagName, "#00F", document.querySelector("#is-artist").checked, trackID, "#search-results", {
                     AddParams: true
                 });
             });
@@ -258,12 +267,12 @@ function RefreshLists(shouldRefreshAllTagList, trackID) {
     fetch(`http://localhost:8080/api/tag/refresh-lists/${trackID}/${shouldRefreshAllTagList ? 1 : 0}`).then((f) => {
         f.json().then(r => {
             document.querySelector("#current-tags-box").innerHTML = "";
-            r.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, trackID, "#current-tags-box", {
+            r.currentTags.forEach(t => AddTagToUI(t.TagName, "#00F", t.IsArtistTag, trackID, "#current-tags-box", {
                 RemoveParams: true
             }));
             if(r.allTags) {
                 document.querySelector("#all-tags-box").innerHTML = "";
-                r.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, trackID, "#all-tags-box", {
+                r.allTags.forEach(t => AddTagToUI(t.TagName, "#00F", t.IsArtistTag, trackID, "#all-tags-box", {
                     AddParams: true,
                     DeleteParams: true,
                     EditParams: true
