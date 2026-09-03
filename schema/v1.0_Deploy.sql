@@ -39,6 +39,3 @@ CREATE TABLE IF NOT EXISTS DBTaggerInfo (
     InfoName TEXT,
     InfoValue TEXT
 );
-
-INSERT INTO DBTaggerInfo (InfoName, InfoValue)
-VALUES ('Version', '1.0');
