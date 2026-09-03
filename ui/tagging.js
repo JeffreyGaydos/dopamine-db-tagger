@@ -1,3 +1,5 @@
+let sort = "date";
+
 window.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#tag").focus();
     document.querySelector("#tag").addEventListener("keydown", (e) => {
@@ -61,8 +63,10 @@ window.addEventListener("DOMContentLoaded", () => {
                 newColor,
                 newTagName
             })
-        }).then(_ => {
-            window.location = window.location;
+        }).then(r => {
+            r.json().then(validationErrors => {
+                HandleEditTagResponse(responseJson.TrackID, validationErrors);
+            });
         });
     });
 
@@ -78,6 +82,11 @@ window.addEventListener("DOMContentLoaded", () => {
                 AddParams: true
             });
         }
+    });
+
+    document.querySelector("#all-tag-sort").addEventListener("change", (e) => {
+        sort = e.target.value;
+        RefreshLists(true, responseJson.TrackID);
     });
 });
 
@@ -223,24 +232,7 @@ function AddTagToUI(tagName, color, isArtist, trackID, boxSelector, endpoints = 
                         editModal.querySelector("#new-tag-name").value = tagName;
                         editModal.querySelector("#new-tag-color").value = color;
                         editModal.show(); //cannot use invoker commands for this because of the heirarchy or something similar, not sure
-                        editLoading = false;
-                        //TODO: refactor the below, then remove the above editLoading = false; call. We need to switch the actual edit endpoint to a post and hook it into the form, which conveniently already posts with the form inputs for us
-                        //TODO: add links for the list of modified tracks so folks could click into them to confirm which other tags are on the affected tracks
-                        return;
-                        let newTag = prompt(baseMessage, tagName);
-                        if(newTag !== null) {
-                            fetch(`http://localhost:8080/api/tag/usage/${encodeURIComponent(newTag)}`).then((f2) => {
-                                f2.json().then(r2 => {
-                                    if(r2.tagCount === 0) {
-                                        fetch(`http://localhost:8080/api/tag/edit/${encodeURIComponent(tagName)}/${encodeURIComponent(newTag)}`).then((f3) => {
-                                            HandleEditTagResponse(trackID);
-                                        });
-                                    } else {
-                                        alert(`Tag already exists, try again.`/* would you like to merge tag "${tagName}" into the existing tag "${newTag}"?`*/);
-                                    }
-                                });
-                            });
-                        }
+                        editModal.querySelector("#new-tag-name").focus();
                         editLoading = false;
                     });
                 });
@@ -288,7 +280,7 @@ function SearchInterval(trackID) {
                 document.querySelector("#existing-tag-blurb").style.display = "block";
             }
             r.filter(e => e.AlreadyOnTrack == 0).forEach(sr => {
-                AddTagToUI(sr.TagName, color, isArtist, trackID, "#search-results", {
+                AddTagToUI(sr.TagName, sr.Color, isArtist, trackID, "#search-results", {
                     AddParams: true
                 });
             });
@@ -315,8 +307,15 @@ function HandleDeleteTagResponse(trackID) {
     RefreshLists(true, trackID);
 }
 
-function HandleEditTagResponse(trackID) {
-    RefreshLists(true, trackID);
+function HandleEditTagResponse(trackID, validationErrors) {
+    if(validationErrors.length === 0) {
+        RefreshLists(true, trackID);
+        document.querySelector("#edit-modal").close();
+    } else {
+        validationErrors.forEach(v => {
+            alert(v);
+        });
+    }
 }
 
 function RefreshLists(shouldRefreshAllTagList, trackID) {
@@ -329,7 +328,48 @@ function RefreshLists(shouldRefreshAllTagList, trackID) {
             }));
             if(r.allTags) {
                 document.querySelector("#all-tags-box").innerHTML = "";
-                r.allTags.forEach(t => AddTagToUI(t.TagName, t.Color, t.IsArtistTag, trackID, "#all-tags-box", {
+                let sortedAllTags = r.allTags;
+                switch(sort) {
+                    case "date":
+                        break;
+                    case "date-d":
+                        sortedAllTags = sortedAllTags.reverse();
+                        break;
+                    case "alpha":
+                        sortedAllTags = sortedAllTags.sort((t1, t2) => {
+                            if(t1.TagName > t2.TagName) {
+                                return 1;
+                            }
+                            else if (t1.TagName < t2.TagName) {
+                                return -1;
+                            }
+                            else {
+                                return 0;
+                            }
+                        });
+                        break;
+                    case "alpha-d":
+                        sortedAllTags = sortedAllTags.sort((t1, t2) => {
+                            if(t1.TagName > t2.TagName) {
+                                return -1;
+                            }
+                            else if (t1.TagName < t2.TagName) {
+                                return 1;
+                            }
+                            else {
+                                return 0;
+                            }
+                        });
+                        break;
+                    case "color":
+                        sortedAllTags = sortedAllTags.sort((t1, t2) => parseInt(t2.Color.substring(1), 16) - parseInt(t1.Color.substring(1), 16));
+                        break;
+                    case "color-d":
+                        sortedAllTags = sortedAllTags.sort((t1, t2) => parseInt(t1.Color.substring(1), 16) - parseInt(t2.Color.substring(1), 16));
+                        break;
+                }
+                console.log(sortedAllTags);
+                sortedAllTags.forEach(t => AddTagToUI(t.TagName, t.Color, t.IsArtistTag, trackID, "#all-tags-box", {
                     AddParams: true,
                     DeleteParams: true,
                     EditParams: true

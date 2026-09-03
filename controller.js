@@ -14,7 +14,8 @@ import {
     RemoveTag,
     SearchAvailableTags,
     SearchTracks,
-    UpdateTag
+    UpdateTag,
+    GetTagExists
 } from "./db-client.js";
 import {
     BasicGetFile,
@@ -107,6 +108,15 @@ export async function AddTag(tagName, color, trackID, artist=false) {
 
 export async function EditTag(tagName, newText, newColor) {
     await UpdateTag(tagName, newText, newColor);
+}
+
+export async function ValidateEditTag(tagName, newText) {
+    if(tagName != newText) {
+        if(await GetTagExists(newText)) {
+            return ["Tag name already exists"];
+        }
+    }
+    return [];
 }
 
 export async function GetDeletionCounts(tagName) {

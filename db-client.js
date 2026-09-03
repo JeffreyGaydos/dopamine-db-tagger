@@ -169,6 +169,7 @@ export async function SearchAvailableTags(stringQuery, trackID) {
     return await myDb.all(`
         SELECT
             T.TagName,
+            T.Color,
             IIF(T.TagName = $s, 1, 0) AS ExactMatch,
             IIF(TA.TrackID IS NULL, 0, 1) AS AlreadyOnTrack
         FROM Tags T
@@ -214,6 +215,18 @@ export async function AddTagForTrack(tagName, color, trackID) {
         addedNewTag,
         addedTrackTag
     };
+}
+
+export async function GetTagExists(tagName) {
+    const myDb = await GetDBCached();
+    if(!myDb) return undefined;
+    const tagExists = await myDb.all(`
+        SELECT NULL
+        FROM Tags
+        WHERE TagName = $s
+    `, { $s: tagName });
+
+    return tagExists.length > 0;
 }
 
 export async function AddArtistTag(tagName, trackID) {

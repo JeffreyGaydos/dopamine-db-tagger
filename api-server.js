@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled, ExecuteRawQuery } from './controller.js';
+import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled, ExecuteRawQuery, ValidateEditTag } from './controller.js';
 import Install from './install.js';
 import Uninstall from './uninstall.js';
 import { GetConfigJSONCached, SetConfigJSON } from './utilities.js';
@@ -75,9 +75,12 @@ async function RouteAPIEndpoints(url, body) {
                     break;
                 case "edit":
                     const editParameters = JSON.parse(body);
-                    await EditTag(editParameters.tagName, editParameters.newTagName, editParameters.newColor);
+                    const validationErrors = await ValidateEditTag(editParameters.tagName, editParameters.newTagName, editParameters.newColor);
+                    if(validationErrors.length == 0) {
+                        await EditTag(editParameters.tagName, editParameters.newTagName, editParameters.newColor);
+                    }
                     return {
-                        apiData: undefined,
+                        apiData: validationErrors,
                         modified: true
                     };
                     break;
