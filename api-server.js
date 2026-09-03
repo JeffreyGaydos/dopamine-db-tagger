@@ -4,8 +4,8 @@ import Install from './install.js';
 import Uninstall from './uninstall.js';
 import { GetConfigJSONCached, SetConfigJSON } from './utilities.js';
 
-export async function GetApiResource(url, mime, res) {
-    RouteAPIEndpoints(url).then(modifiedData => {
+export async function GetApiResource(url, mime, res, body) {
+    RouteAPIEndpoints(url, body).then(modifiedData => {
         if(modifiedData.modified) {
             mime = 'text/plain';
             res.setHeader('Content-type', mime);
@@ -23,7 +23,17 @@ function WithTypicalResponseContainer(jsonData) {
     return `<div id="response" style="display: none">${JSON.stringify(jsonData)}</div>`;
 }
 
-async function RouteAPIEndpoints(url) {
+function FormDataToParameterDictionary(rawFormBody) {
+    const parameters = {};
+    rawFormBody.split("&").map(p => {
+        const parameter = decodeURIComponent(p);
+        const kvp = parameter.split("=");
+        parameters[`${kvp[0]}`] = kvp[1];
+    });
+    return parameters;
+}
+
+async function RouteAPIEndpoints(url, body) {
     const urlBits = url.split("/").filter(b => b !== '');
     if(urlBits[0] !== "api") {
         console.error("It looks like we broke the server. Got a non-API request routed to the api-server.js file");
@@ -49,7 +59,8 @@ async function RouteAPIEndpoints(url) {
         case "tag":
             switch(urlBits[2]) {
                 case "add":
-                    const addResult = await AddTag(decodeURIComponent(urlBits[4]), urlBits[3]);
+                    const addParameters = JSON.parse(body);
+                    const addResult = await AddTag(addParameters.tagName, addParameters.color, addParameters.trackID, addParameters.isArtist);
                     return {
                         apiData: addResult,
                         modified: true
@@ -63,15 +74,12 @@ async function RouteAPIEndpoints(url) {
                     };
                     break;
                 case "edit":
-                    if(!urlBits[3] || !urlBits[4] || !urlBits[5]) {
-                        console.log("Expected one or more missing parameters: /edit/tagName/newText/newColor");
-                    }
-                    const editResult = await EditTag(decodeURIComponent(urlBits[3]), decodeURIComponent(urlBits[4]));
+                    const editParameters = JSON.parse(body);
+                    await EditTag(editParameters.tagName, editParameters.newTagName, editParameters.newColor);
                     return {
-                        apiData: editResult,
+                        apiData: undefined,
                         modified: true
                     };
-                    break;
                     break;
                 case "delete":
                     const deleteResult = await DeleteTagEverywhere(decodeURIComponent(urlBits[3]));

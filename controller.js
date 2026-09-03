@@ -95,19 +95,18 @@ export async function GetAvailableTagSearchRestults(stringQuery, trackID) {
     return searchResults;
 }
 
-export async function AddTag(tagName, trackID, artist=false) {
+export async function AddTag(tagName, color, trackID, artist=false) {
     if(!artist) {
-        const addResult = await AddTagForTrack(tagName, trackID);
+        const addResult = await AddTagForTrack(tagName, color, trackID);
         return {
             shouldRefreshAllTagList: !!addResult.addedNewTag[0],
             rejectedTagAdd: !addResult.addedTrackTag[0]
         }
     }
-    
 }
 
-export async function EditTag(tagName, newText) {
-    await UpdateTag(tagName, newText);
+export async function EditTag(tagName, newText, newColor) {
+    await UpdateTag(tagName, newText, newColor);
 }
 
 export async function GetDeletionCounts(tagName) {

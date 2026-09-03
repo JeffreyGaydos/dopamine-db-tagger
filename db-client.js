@@ -115,7 +115,7 @@ export async function GetAllTags() {
     const myDb = await GetDBCached();
     if(!myDb) return undefined;
     const allTagResult = await myDb.all(`
-        SELECT TagName FROM Tags
+        SELECT TagName, Color FROM Tags
     `);
 
     return allTagResult;
@@ -184,19 +184,19 @@ export async function SearchAvailableTags(stringQuery, trackID) {
     );
 }
 
-export async function AddTagForTrack(tagName, trackID) {
+export async function AddTagForTrack(tagName, color, trackID) {
     const myDb = await GetDBCached();
     if(!myDb) return undefined;
     const addedNewTag = await myDb.all(`
-        INSERT INTO Tags (TagName)
-        SELECT $s
+        INSERT INTO Tags (TagName, Color)
+        SELECT $s, $c
         WHERE NOT EXISTS (
             SELECT NULL
             FROM Tags
             WHERE TagName = $s
         )
-        RETURNING TagName
-    `, { $s: tagName });
+        RETURNING TagName, Color
+    `, { $s: tagName, $c: color });
 
     const addedTrackTag = await myDb.all(`
         INSERT INTO TaggedTracks (TrackID, TagName)
@@ -211,7 +211,7 @@ export async function AddTagForTrack(tagName, trackID) {
     `, { $s: tagName, $t: trackID });
 
     return {
-        addedNewTag, 
+        addedNewTag,
         addedTrackTag
     };
 }
@@ -280,14 +280,14 @@ export async function DeleteTag(tagName) {
     `, { $s: tagName });
 }
 
-export async function UpdateTag(tagName, newTagName) {
+export async function UpdateTag(tagName, newTagName, newColor) {
     const myDb = await GetDBCached();
     if(!myDb) return undefined;
     const updateTag = myDb.all(`
         UPDATE Tags
-        SET TagName = $n
+        SET TagName = $n, Color = $c
         WHERE TagName = $s
-    `, { $s: tagName, $n: newTagName });
+    `, { $s: tagName, $n: newTagName, $c: newColor });
 
     const updateTracks = myDb.all(`
         UPDATE TaggedTracks

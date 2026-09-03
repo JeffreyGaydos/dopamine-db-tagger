@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { BasicGetFile, GetConfigJSONCached, GetMimeTypeFromURI } from './utilities.js';
 import { Landing, Tagging } from './controller.js';
 
-export async function GetWebResource(url, mime, res) {
+export async function GetWebResource(url, mime, res, body) {
     fs.readFile('./' + url, function(err, data) {
         RouteEndpoints(url, data).then(modifiedData => {
             if(modifiedData.modified || !err) {

@@ -15,10 +15,10 @@ window.addEventListener("DOMContentLoaded", () => {
     RenderMetadata(responseJson);
     AddHandlers(responseJson);
     console.log(responseJson.currentTags[0]);
-    responseJson.currentTags.forEach(t => AddTagToUI(t.TagName, "#00F", t.IsArtistTag, responseJson.TrackID, "#current-tags-box", {
+    responseJson.currentTags.forEach(t => AddTagToUI(t.TagName, t.Color, t.IsArtistTag, responseJson.TrackID, "#current-tags-box", {
         RemoveParams: true
     }));
-    responseJson.allTags.forEach(t => AddTagToUI(t.TagName, "#00F", t.IsArtistTag, responseJson.TrackID, "#all-tags-box", {
+    responseJson.allTags.forEach(t => AddTagToUI(t.TagName, t.Color, t.IsArtistTag, responseJson.TrackID, "#all-tags-box", {
         AddParams: true,
         DeleteParams: true,
         EditParams: true
@@ -46,6 +46,24 @@ window.addEventListener("DOMContentLoaded", () => {
         else if(e.key === "MediaTrackPrevious") {
             document.querySelector("#previous-track").click();
         }
+    });
+
+    // Doing it this way because you can't prevent the redirect will still allowing the form to submit without creating performance issues (iframes in iframes in iframes)
+    document.querySelector("#edit-modal form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const tagName = document.querySelector("#edit-modal form #tag-name").value;
+        const newColor = document.querySelector("#edit-modal form #new-tag-color").value;
+        const newTagName = document.querySelector("#edit-modal form #new-tag-name").value;
+        fetch(`http://localhost:8080/api/tag/edit`, {
+            method: "POST",
+            body: JSON.stringify({
+                tagName,
+                newColor,
+                newTagName
+            })
+        }).then(_ => {
+            window.location = window.location;
+        });
     });
 });
 
@@ -97,13 +115,22 @@ function AddTagToUI(tagName, color, isArtist, trackID, boxSelector, endpoints = 
     const tagElement = document.createElement("BUTTON");
     tagElement.classList.add("tag");
     tagElement.setAttribute("ev", tagName);
+    tagElement.style.backgroundColor = color;
     if(isArtist) tagElement.classList.add("a");
     tagElement.innerText = tagName;
     if(endpoints?.AddParams) {
         tagElement.addEventListener("click", () => {
             if(!addLoading) {
                 addLoading = true;
-                fetch(`http://localhost:8080/api/tag/add/${trackID}/${encodeURIComponent(tagName)}`).then((f) => {
+                fetch(`http://localhost:8080/api/tag/add`, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        trackID,
+                        tagName,
+                        color,
+                        isArtist
+                    })
+                }).then((f) => {
                     f.json().then(r => {
                         HandleAddTagResponse(r, trackID);
                         addLoading = false;
@@ -169,7 +196,8 @@ function AddTagToUI(tagName, color, isArtist, trackID, boxSelector, endpoints = 
                         const baseMessage = `Modifying the tag "${tagName}" will effect ${r.trackCount} track tags, ${r.artistCount} artist tags, ${r.allCount} total tracks.`;
                         editModal.querySelector("p").innerText = baseMessage;
                         editModal.querySelector("#tag-name").value = tagName;
-                        editModal.querySelector("#tag-color").value = color;
+                        editModal.querySelector("#new-tag-name").value = tagName;
+                        editModal.querySelector("#new-tag-color").value = color;
                         editModal.show(); //cannot use invoker commands for this because of the heirarchy or something similar, not sure
                         editLoading = false;
                         //TODO: refactor the below, then remove the above editLoading = false; call. We need to switch the actual edit endpoint to a post and hook it into the form, which conveniently already posts with the form inputs for us
@@ -222,9 +250,13 @@ function SearchInterval(trackID) {
             ntDisplay.innerHTML = "";
             document.querySelector("#new-tag-blurb").style.display = "none";
             document.querySelector("#existing-tag-blurb").style.display = "none"            
+
+            const color = document.querySelector("#color").value;
+            const isArtist = document.querySelector("#is-artist").checked
+
             if(!r[0]?.ExactMatch) {
                 document.querySelector("#new-tag-blurb").style.display = "block";
-                AddTagToUI(queryString, "#00F", document.querySelector("#is-artist").checked, trackID, "#new-tag-display", {
+                AddTagToUI(queryString, color, isArtist, trackID, "#new-tag-display", {
                     AddParams: true
                 });
             }
@@ -232,7 +264,7 @@ function SearchInterval(trackID) {
                 document.querySelector("#existing-tag-blurb").style.display = "block";
             }
             r.filter(e => e.AlreadyOnTrack == 0).forEach(sr => {
-                AddTagToUI(sr.TagName, "#00F", document.querySelector("#is-artist").checked, trackID, "#search-results", {
+                AddTagToUI(sr.TagName, color, isArtist, trackID, "#search-results", {
                     AddParams: true
                 });
             });
@@ -267,12 +299,13 @@ function RefreshLists(shouldRefreshAllTagList, trackID) {
     fetch(`http://localhost:8080/api/tag/refresh-lists/${trackID}/${shouldRefreshAllTagList ? 1 : 0}`).then((f) => {
         f.json().then(r => {
             document.querySelector("#current-tags-box").innerHTML = "";
-            r.currentTags.forEach(t => AddTagToUI(t.TagName, "#00F", t.IsArtistTag, trackID, "#current-tags-box", {
+            console.log(r.currentTags);
+            r.currentTags.forEach(t => AddTagToUI(t.TagName, t.Color, t.IsArtistTag, trackID, "#current-tags-box", {
                 RemoveParams: true
             }));
             if(r.allTags) {
                 document.querySelector("#all-tags-box").innerHTML = "";
-                r.allTags.forEach(t => AddTagToUI(t.TagName, "#00F", t.IsArtistTag, trackID, "#all-tags-box", {
+                r.allTags.forEach(t => AddTagToUI(t.TagName, t.Color, t.IsArtistTag, trackID, "#all-tags-box", {
                     AddParams: true,
                     DeleteParams: true,
                     EditParams: true
