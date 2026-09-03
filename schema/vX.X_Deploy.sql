@@ -26,14 +26,17 @@ CREATE TABLE IF NOT EXISTS TaggedArtists
 CREATE VIEW IF NOT EXISTS TaggedAll
 (
     TagName,
+    Color,
     TrackID,
     IsArtistTag
 )
 AS
-SELECT TA.TagName, T.TrackID, 1 AS IsArtistTag FROM TaggedArtists TA
+SELECT TA.TagName, TAG.Color, T.TrackID, 1 AS IsArtistTag FROM TaggedArtists TA
 JOIN Track T ON T.Artists LIKE CONCAT('%;', TA.ArtistName, ';%')
+JOIN Tags TAG ON TAG.TagName = TA.TagName
 UNION
-SELECT TagName, TrackID, 0 AS IsArtistTag FROM TaggedTracks
+SELECT TT.TagName, TAG.Color, TT.TrackID, 0 AS IsArtistTag FROM TaggedTracks TT
+JOIN Tags TAG ON TAG.TagName = TT.TagName
 ;
 
 CREATE TABLE IF NOT EXISTS DBTaggerInfo (
