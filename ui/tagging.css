@@ -39,19 +39,20 @@ label ~ input {
     min-height: 30px;
     width: max-content;
     max-width: 400px;
-    background-color: blue;
-    color: white;
+    background-color: var(--the-color);
+    color: var(--the-text-color);
     font-weight: 600;
     padding: 5px 10px;
     margin: 5px;
     display: inline-flex;
     transition: all ease 0.2s;
+    box-shadow: 0px 0px 3px black;
 
     button {
         padding: 0;
         margin-left: 10px;
         font-size: 20px;
-        color: white;
+        color: var(--the-text-color);
         font-weight: 600;
         margin-top: -3.5px;
         border: 0;
@@ -73,20 +74,23 @@ label ~ input {
 
 .tag.a {
     outline: 2px solid var(--green);
-    border: 2px solid white;
+    border: 2px solid var(--the-text-color);
 }
 
 .tag button:hover {
     color: red;
+    filter: drop-shadow(1px 0px 0px black) drop-shadow(-1px 0px 0px black) drop-shadow(0px 1px 0px black) drop-shadow(0px -1px 0px black);
 }
 
 .tag button.edit:hover {
     color: rgb(0, 255, 0);
+    filter: drop-shadow(1px 0px 0px black) drop-shadow(-1px 0px 0px black) drop-shadow(0px 1px 0px black) drop-shadow(0px -1px 0px black);
 }
 
 .tag:disabled {
     cursor: not-allowed;
-    background-color: rgb(0, 0, 147);
+    background-color: hsl(from var(--the-color) h s calc(l / 2)) !important;
+    box-shadow: none;
 }
 
 a#next-track, a#previous-track {
