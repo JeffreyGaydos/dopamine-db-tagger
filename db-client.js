@@ -356,6 +356,35 @@ export async function GetCurrentVersionOfInstallation() {
     return versionResult;
 }
 
+export async function GetSortOrderSetting() {
+    const myDb = await GetDBCached();
+    if(!myDb) return undefined;
+    const sortResult = await myDb.all(`
+        SELECT InfoValue FROM DBTaggerInfo WHERE InfoName = 'AllTagsSortOrder'
+    `);
+    return sortResult;
+}
+
+export async function UpsertSortOrderSetting(newSetting) {
+    const myDb = await GetDBCached();
+    if(!myDb) return undefined;
+    await myDb.all(`
+        INSERT INTO DBTaggerInfo (InfoValue, InfoName)
+        SELECT $d, 'AllTagsSortOrder'
+        WHERE NOT EXISTS (
+            SELECT NULL
+            FROM DBTaggerInfo
+            WHERE InfoName = 'AllTagsSortOrder'
+        )
+    `, { $d: newSetting });
+
+    await myDb.all(`
+        UPDATE DBTaggerInfo
+        SET InfoValue = $d
+        WHERE InfoName = 'AllTagsSortOrder'
+    `, { $d: newSetting });
+}
+
 export async function ExecuteRaw(query, limitOrTrueForAll) {
     const myDb = await GetRODBCached();
     if(!myDb) return undefined;

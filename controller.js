@@ -15,7 +15,9 @@ import {
     SearchAvailableTags,
     SearchTracks,
     UpdateTag,
-    GetTagExists
+    GetTagExists,
+    GetSortOrderSetting,
+    UpsertSortOrderSetting
 } from "./db-client.js";
 import {
     BasicGetFile,
@@ -179,4 +181,12 @@ export async function ExecuteRawQuery(query, limitOrTrue) {
         limited: limited,
         results: result.results
     };
+}
+
+export async function GetSortOrder() {
+    return await GetSortOrderSetting();
+}
+
+export async function SetSortOrder(newSortOrder) {
+    return await UpsertSortOrderSetting(newSortOrder);
 }

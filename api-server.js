@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled, ExecuteRawQuery, ValidateEditTag } from './controller.js';
+import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled, ExecuteRawQuery, ValidateEditTag, GetSortOrder, SetSortOrder } from './controller.js';
 import Install from './install.js';
 import Uninstall from './uninstall.js';
 import { GetConfigJSONCached, SetConfigJSON } from './utilities.js';
@@ -190,6 +190,29 @@ async function RouteAPIEndpoints(url, body) {
                     };
                 }
                 break;   
+            }
+            break;
+        case "settings":
+            switch(urlBits[2]) {
+                case "sort":
+                    switch(urlBits[3]) {
+                        case "get":
+                            const currentSortOrder = await GetSortOrder();
+                            return {
+                                apiData: currentSortOrder,
+                                modified: true
+                            };
+                            break;
+                        case "set":
+                            const newSort = urlBits[4];
+                            await SetSortOrder(newSort);
+                            return {
+                                apiData: undefined,
+                                modified: true
+                            };
+                            break;
+                    }
+                    break;
             }
             break;
     }

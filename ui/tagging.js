@@ -1,5 +1,3 @@
-let sort = "date";
-
 window.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#tag").focus();
     document.querySelector("#tag").addEventListener("keydown", (e) => {
@@ -85,9 +83,14 @@ window.addEventListener("DOMContentLoaded", () => {
     });
 
     document.querySelector("#all-tag-sort").addEventListener("change", (e) => {
-        sort = e.target.value;
-        RefreshLists(true, responseJson.TrackID);
+        fetch(`http://localhost:8080/api/settings/sort/set/${e.target.value}`)
+        .then(() => {
+            RefreshLists(true, responseJson.TrackID);
+        });
     });
+
+    // mostly for sorting the all tags
+    RefreshLists(true, responseJson.TrackID);
 });
 
 function RenderMetadata(json) {
@@ -329,51 +332,61 @@ function RefreshLists(shouldRefreshAllTagList, trackID) {
             if(r.allTags) {
                 document.querySelector("#all-tags-box").innerHTML = "";
                 let sortedAllTags = r.allTags;
-                switch(sort) {
-                    case "date":
-                        break;
-                    case "date-d":
-                        sortedAllTags = sortedAllTags.reverse();
-                        break;
-                    case "alpha":
-                        sortedAllTags = sortedAllTags.sort((t1, t2) => {
-                            if(t1.TagName > t2.TagName) {
-                                return 1;
-                            }
-                            else if (t1.TagName < t2.TagName) {
-                                return -1;
-                            }
-                            else {
-                                return 0;
-                            }
-                        });
-                        break;
-                    case "alpha-d":
-                        sortedAllTags = sortedAllTags.sort((t1, t2) => {
-                            if(t1.TagName > t2.TagName) {
-                                return -1;
-                            }
-                            else if (t1.TagName < t2.TagName) {
-                                return 1;
-                            }
-                            else {
-                                return 0;
-                            }
-                        });
-                        break;
-                    case "color":
-                        sortedAllTags = sortedAllTags.sort((t1, t2) => parseInt(t2.Color.substring(1), 16) - parseInt(t1.Color.substring(1), 16));
-                        break;
-                    case "color-d":
-                        sortedAllTags = sortedAllTags.sort((t1, t2) => parseInt(t1.Color.substring(1), 16) - parseInt(t2.Color.substring(1), 16));
-                        break;
-                }
-                console.log(sortedAllTags);
-                sortedAllTags.forEach(t => AddTagToUI(t.TagName, t.Color, t.IsArtistTag, trackID, "#all-tags-box", {
-                    AddParams: true,
-                    DeleteParams: true,
-                    EditParams: true
-                }, r.currentTags.filter(ct => ct.TagName == t.TagName).length > 0));
+                fetch(`http://localhost:8080/api/settings/sort/get`)
+                .then((sortr) => {
+                    sortr.json().then((j) => {
+                        let sortOrder = "date";
+                        if(j.length > 0) {
+                            sortOrder = j[0].InfoValue;
+                        }
+                        document.querySelector("#all-tag-sort").value = sortOrder;
+                        document.querySelector(`#all-tag-sort option[value="${sortOrder}"]`).setAttribute("selected", null);
+                        switch(sortOrder) {
+                            case "date":
+                                break;
+                            case "date-d":
+                                sortedAllTags = sortedAllTags.reverse();
+                                break;
+                            case "alpha":
+                                sortedAllTags = sortedAllTags.sort((t1, t2) => {
+                                    if(t1.TagName > t2.TagName) {
+                                        return 1;
+                                    }
+                                    else if (t1.TagName < t2.TagName) {
+                                        return -1;
+                                    }
+                                    else {
+                                        return 0;
+                                    }
+                                });
+                                break;
+                            case "alpha-d":
+                                sortedAllTags = sortedAllTags.sort((t1, t2) => {
+                                    if(t1.TagName > t2.TagName) {
+                                        return -1;
+                                    }
+                                    else if (t1.TagName < t2.TagName) {
+                                        return 1;
+                                    }
+                                    else {
+                                        return 0;
+                                    }
+                                });
+                                break;
+                            case "color":
+                                sortedAllTags = sortedAllTags.sort((t1, t2) => parseInt(t2.Color.substring(1), 16) - parseInt(t1.Color.substring(1), 16));
+                                break;
+                            case "color-d":
+                                sortedAllTags = sortedAllTags.sort((t1, t2) => parseInt(t1.Color.substring(1), 16) - parseInt(t2.Color.substring(1), 16));
+                                break;
+                        }
+                        sortedAllTags.forEach(t => AddTagToUI(t.TagName, t.Color, t.IsArtistTag, trackID, "#all-tags-box", {
+                            AddParams: true,
+                            DeleteParams: true,
+                            EditParams: true
+                        }, r.currentTags.filter(ct => ct.TagName == t.TagName).length > 0));
+                    });
+                });
             }
         });
     });
