@@ -33,6 +33,34 @@
             <ul id="search-results-box"></ul>
         </form>
         <div class="header">
+            <h4>...Or select a sequencing order</h4>
+        </div>
+        <form>
+            <label for="sequence-type">Sequence Sort Type: </label>
+            <select id="sequence-type">
+                <option>Alphabetical By Track</option>
+                <option>Alphabetical By Artist</option>
+                <option>Alphabetical By Album</option>
+                <option>Chronological By Track</option>
+                <option>Chronological By Artist</option>
+                <option>Chronological By Album</option>
+                <option>Random</option>
+            </select>
+            <br/>
+            <br/>
+            <label for="sequence-order">Sort Z-A/Newest-Oldest:</label>
+            <input id="sequence-order" type="checkbox">
+            <br/>
+            <br/>
+            <label for="sequence-track">Enter a trackID to pick up where you left off. Leave empty to start the sequence from the "beginning".</label>
+            <br/>
+            <br/>
+            <input id="sequence-track" type="text" placeholder="Input TrackID"></input>
+            <br/>
+            <br/>
+            <button>Begin Sequence</button>
+        </form>
+        <div class="header">
             <h4>...Or select a track to start on by artist</h4>
         </div>
         <div id="artist-list">
