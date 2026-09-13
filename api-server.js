@@ -1,11 +1,11 @@
 import fs from 'node:fs';
-import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled, ExecuteRawQuery } from './controller.js';
+import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled, ExecuteRawQuery, ValidateEditTag, GetSortOrder, SetSortOrder, GetTrackDataByTagName } from './controller.js';
 import Install from './install.js';
 import Uninstall from './uninstall.js';
 import { GetConfigJSONCached, SetConfigJSON } from './utilities.js';
 
-export async function GetApiResource(url, mime, res) {
-    RouteAPIEndpoints(url).then(modifiedData => {
+export async function GetApiResource(url, mime, res, body) {
+    RouteAPIEndpoints(url, body).then(modifiedData => {
         if(modifiedData.modified) {
             mime = 'text/plain';
             res.setHeader('Content-type', mime);
@@ -23,7 +23,17 @@ function WithTypicalResponseContainer(jsonData) {
     return `<div id="response" style="display: none">${JSON.stringify(jsonData)}</div>`;
 }
 
-async function RouteAPIEndpoints(url) {
+function FormDataToParameterDictionary(rawFormBody) {
+    const parameters = {};
+    rawFormBody.split("&").map(p => {
+        const parameter = decodeURIComponent(p);
+        const kvp = parameter.split("=");
+        parameters[`${kvp[0]}`] = kvp[1];
+    });
+    return parameters;
+}
+
+async function RouteAPIEndpoints(url, body) {
     const urlBits = url.split("/").filter(b => b !== '');
     if(urlBits[0] !== "api") {
         console.error("It looks like we broke the server. Got a non-API request routed to the api-server.js file");
@@ -45,11 +55,18 @@ async function RouteAPIEndpoints(url) {
                         modified: true
                     }
                     break;
+                case "trackswithtag":
+                    const tracks = await GetTrackDataByTagName(urlBits[3]);
+                    return {
+                        apiData: tracks,
+                        modified: true
+                    };
             }
         case "tag":
             switch(urlBits[2]) {
                 case "add":
-                    const addResult = await AddTag(decodeURIComponent(urlBits[4]), urlBits[3]);
+                    const addParameters = JSON.parse(body);
+                    const addResult = await AddTag(addParameters.tagName, addParameters.color, addParameters.trackID, addParameters.isArtist);
                     return {
                         apiData: addResult,
                         modified: true
@@ -63,15 +80,15 @@ async function RouteAPIEndpoints(url) {
                     };
                     break;
                 case "edit":
-                    if(!urlBits[3] || !urlBits[4] || !urlBits[5]) {
-                        console.log("Expected one or more missing parameters: /edit/tagName/newText/newColor");
+                    const editParameters = JSON.parse(body);
+                    const validationErrors = await ValidateEditTag(editParameters.tagName, editParameters.newTagName, editParameters.newColor);
+                    if(validationErrors.length == 0) {
+                        await EditTag(editParameters.tagName, editParameters.newTagName, editParameters.newColor);
                     }
-                    const editResult = await EditTag(decodeURIComponent(urlBits[3]), decodeURIComponent(urlBits[4]));
                     return {
-                        apiData: editResult,
+                        apiData: validationErrors,
                         modified: true
                     };
-                    break;
                     break;
                 case "delete":
                     const deleteResult = await DeleteTagEverywhere(decodeURIComponent(urlBits[3]));
@@ -106,12 +123,11 @@ async function RouteAPIEndpoints(url) {
             switch(urlBits[2]) {
                 case "install":
                     let installResult = undefined;
-                    console.log(urlBits[3]);
                     try {
-                        if(urlBits[3]) {
-                            installResult = await Install(true);    
+                        if(urlBits[4]) {
+                            installResult = await Install(urlBits[3], true);
                         } else {
-                            installResult = await Install();
+                            installResult = await Install(urlBits[3]);
                         }
                     } catch(e) {
                         
@@ -180,6 +196,29 @@ async function RouteAPIEndpoints(url) {
                     };
                 }
                 break;   
+            }
+            break;
+        case "settings":
+            switch(urlBits[2]) {
+                case "sort":
+                    switch(urlBits[3]) {
+                        case "get":
+                            const currentSortOrder = await GetSortOrder();
+                            return {
+                                apiData: currentSortOrder,
+                                modified: true
+                            };
+                            break;
+                        case "set":
+                            const newSort = urlBits[4];
+                            await SetSortOrder(newSort);
+                            return {
+                                apiData: undefined,
+                                modified: true
+                            };
+                            break;
+                    }
+                    break;
             }
             break;
     }

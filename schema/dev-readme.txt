@@ -1,0 +1,11 @@
+This folder has all the "migrations" for each kind of upgrade. So if you are going from 1.0 to 1.5, you should have 4 deploy scripts that need run in order. Backdate of course means running the rollbacks in reverse order. Each script should have a description of what it's doing, aside from v1.0, the initial version.
+
+The vX.X scripts are all versions combined into the minimumm-operation final state of the database. The vX.X deploy scripts should only be able to be correctly run if the DB schema has been completely uninstalled. The vX.X rollback scripts, however, should be able to be run regardless of which version the user is currently on, to completely uninstall all schema objects.
+
+These versions do NOT correspond with the version of the tagger itself (if that is something we start deonting somewhere)
+
+The versions.json file is responsible for telling users when data loss or other "breaking" changes will occur during an upgrade. This does not include additive changes.
+
+You do NOT need to set the version of the schema in the "info" table, the API will handle that automatically during each installation, so don't mess with versions in the deploy script itself.
+
+In practice, the V0.0 rollback notes are not used, but could be nice if the user somehow messes up the state enough to do that.

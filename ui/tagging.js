@@ -15,10 +15,10 @@ window.addEventListener("DOMContentLoaded", () => {
     RenderMetadata(responseJson);
     AddHandlers(responseJson);
     console.log(responseJson.currentTags[0]);
-    responseJson.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, responseJson.TrackID, "#current-tags-box", {
+    responseJson.currentTags.forEach(t => AddTagToUI(t.TagName, t.Color, t.IsArtistTag, responseJson.TrackID, "#current-tags-box", {
         RemoveParams: true
     }));
-    responseJson.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, responseJson.TrackID, "#all-tags-box", {
+    responseJson.allTags.forEach(t => AddTagToUI(t.TagName, t.Color, t.IsArtistTag, responseJson.TrackID, "#all-tags-box", {
         AddParams: true,
         DeleteParams: true,
         EditParams: true
@@ -47,6 +47,79 @@ window.addEventListener("DOMContentLoaded", () => {
             document.querySelector("#previous-track").click();
         }
     });
+
+    // Doing it this way because you can't prevent the redirect will still allowing the form to submit without creating performance issues (iframes in iframes in iframes)
+    document.querySelector("#edit-modal form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const tagName = document.querySelector("#edit-modal form #tag-name").value;
+        const newColor = document.querySelector("#edit-modal form #new-tag-color").value;
+        const newTagName = document.querySelector("#edit-modal form #new-tag-name").value;
+        fetch(`http://localhost:8080/api/tag/edit`, {
+            method: "POST",
+            body: JSON.stringify({
+                tagName,
+                newColor,
+                newTagName
+            })
+        }).then(r => {
+            r.json().then(validationErrors => {
+                HandleEditTagResponse(responseJson.TrackID, validationErrors);
+            });
+        });
+    });
+
+    // Refreshes the preview of the new tag's color in real time
+    document.querySelector("#color").addEventListener("change", (e) => {
+        const queryString = document.querySelector("#tag").value;
+        const ntDisplay = document.querySelector("#new-tag-display");
+        const isArtist = document.querySelector("#is-artist").checked;
+
+        if(queryString !== "" && queryString !== undefined && queryString !== null) {
+            ntDisplay.innerHTML = "";
+            AddTagToUI(queryString, e.target.value, isArtist, responseJson.TrackID, "#new-tag-display", {
+                AddParams: true
+            });
+        }
+    });
+
+    document.querySelector("#all-tag-sort").addEventListener("change", (e) => {
+        fetch(`http://localhost:8080/api/settings/sort/set/${e.target.value}`)
+        .then(() => {
+            RefreshLists(true, responseJson.TrackID);
+        });
+    });
+
+    document.querySelector("#edit-affected-tracks-list").addEventListener("toggle", (e) => {
+        if (e.target.open && e.target.querySelector("ul").innerHTML == "") { 
+            const liLoading = document.createElement("LI");
+            liLoading.innerText = "Loading...";
+            e.target.querySelector("ul").appendChild(liLoading);
+            const tagName = document.querySelector("#edit-modal form #tag-name").value;
+            fetch(`http://localhost:8080/api/search/trackswithtag/${tagName}`)
+                .then((r) => {
+                    r.json().then(j => {
+                        const listParent = e.target.querySelector("ul");
+                        listParent.innerHTML = "";
+                        j.forEach(t => {
+                            const trackLinkLi = document.createElement("LI");
+                            const trackLinkA = document.createElement("A");
+                            trackLinkA.href = `./${t.TrackID}`;
+                            trackLinkA.innerText = t.TrackTitle;
+                            trackLinkLi.appendChild(trackLinkA);
+                            listParent.appendChild(trackLinkLi);
+                        });
+                    });
+                });
+        }
+    });
+
+    // This is so that we grab a fresh list of affected titles if we open a modal for another tag, but only call the trackswithtag endpoint once if we are interacting in the same modal
+    document.querySelector("#edit-modal").addEventListener("close", () => {
+        document.querySelector("#edit-affected-tracks-list ul").innerHTML = "";
+    });
+
+    // mostly for sorting the all tags
+    RefreshLists(true, responseJson.TrackID);
 });
 
 function RenderMetadata(json) {
@@ -93,17 +166,36 @@ let removeLoading = false;
 let deleteLoading = false;
 let editLoading = false;
 
-function AddTagToUI(tagName, isArtist, trackID, boxSelector, endpoints = undefined, disabled=false) {
+function AddTagToUI(tagName, color, isArtist, trackID, boxSelector, endpoints = undefined, disabled=false) {
     const tagElement = document.createElement("BUTTON");
     tagElement.classList.add("tag");
     tagElement.setAttribute("ev", tagName);
+    tagElement.style.setProperty("--the-color", color);
+    const redThreshold = parseInt("0xAA", 16);
+    const greenThreshold = parseInt("0x55", 16);
+    const blueThreshold = parseInt("0xFF", 16);
+    const redInt = parseInt("0x" + color.substring(1, 3), 16);
+    const greenInt = parseInt("0x" + color.substring(3, 5), 16);
+    const blueInt = parseInt("0x" + color.substring(5), 16);
+    tagElement.style.backgroundColor = "var(--the-color)"; // used for disabled color
+    const textColor = (redInt > redThreshold || blueInt > blueThreshold || greenInt > greenThreshold) ? "black" : "white";
+    tagElement.style.color = textColor;
+    tagElement.style.setProperty("--the-text-color", textColor);
     if(isArtist) tagElement.classList.add("a");
     tagElement.innerText = tagName;
     if(endpoints?.AddParams) {
         tagElement.addEventListener("click", () => {
             if(!addLoading) {
                 addLoading = true;
-                fetch(`http://localhost:8080/api/tag/add/${trackID}/${encodeURIComponent(tagName)}`).then((f) => {
+                fetch(`http://localhost:8080/api/tag/add`, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        trackID,
+                        tagName,
+                        color,
+                        isArtist
+                    })
+                }).then((f) => {
                     f.json().then(r => {
                         HandleAddTagResponse(r, trackID);
                         addLoading = false;
@@ -152,6 +244,7 @@ function AddTagToUI(tagName, isArtist, trackID, boxSelector, endpoints = undefin
     }
 
     if(endpoints?.EditParams) {
+        const editModal = document.querySelector("#edit-modal");
         const eButton = document.createElement("BUTTON");
         eButton.classList.add("edit");
         eButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
@@ -161,25 +254,22 @@ function AddTagToUI(tagName, isArtist, trackID, boxSelector, endpoints = undefin
         eButton.addEventListener("click", (e) => {
             e.preventDefault();
             e.stopPropagation();
+            editModal.querySelector("details").style.display = "block";
+            editModal.querySelector("details").removeAttribute("open");
             if(!editLoading) {
                 editLoading = true;
                 fetch(`http://localhost:8080/api/tag/usage/${encodeURIComponent(tagName)}`).then((f) => {
                     f.json().then(r => {
-                        const baseMessage = `Enter new tag text, or cancel. Affects ${r.trackCount} track tags, ${r.artistCount} artist tags, ${r.allCount} total tracks.`;
-                        let newTag = prompt(baseMessage, tagName);
-                        if(newTag !== null) {
-                            fetch(`http://localhost:8080/api/tag/usage/${encodeURIComponent(newTag)}`).then((f2) => {
-                                f2.json().then(r2 => {
-                                    if(r2.tagCount === 0) {
-                                        fetch(`http://localhost:8080/api/tag/edit/${encodeURIComponent(tagName)}/${encodeURIComponent(newTag)}`).then((f3) => {
-                                            HandleEditTagResponse(trackID);
-                                        });
-                                    } else {
-                                        alert(`Tag already exists, try again.`/* would you like to merge tag "${tagName}" into the existing tag "${newTag}"?`*/);
-                                    }
-                                });
-                            });
+                        const baseMessage = `Modifying the tag "${tagName}" will effect ${r.trackCount} track tags, ${r.artistCount} artist tags, ${r.allCount} total tracks.`;
+                        if(r.allCount == 0) {
+                            editModal.querySelector("details").style.display = "none";
                         }
+                        editModal.querySelector("p").innerText = baseMessage;
+                        editModal.querySelector("#tag-name").value = tagName;
+                        editModal.querySelector("#new-tag-name").value = tagName;
+                        editModal.querySelector("#new-tag-color").value = color;
+                        editModal.show(); //cannot use invoker commands for this because of the heirarchy or something similar, not sure
+                        editModal.querySelector("#new-tag-name").focus();
                         editLoading = false;
                     });
                 });
@@ -213,9 +303,13 @@ function SearchInterval(trackID) {
             ntDisplay.innerHTML = "";
             document.querySelector("#new-tag-blurb").style.display = "none";
             document.querySelector("#existing-tag-blurb").style.display = "none"            
+
+            const color = document.querySelector("#color").value;
+            const isArtist = document.querySelector("#is-artist").checked
+
             if(!r[0]?.ExactMatch) {
                 document.querySelector("#new-tag-blurb").style.display = "block";
-                AddTagToUI(queryString, document.querySelector("#is-artist").checked, trackID, "#new-tag-display", {
+                AddTagToUI(queryString, color, isArtist, trackID, "#new-tag-display", {
                     AddParams: true
                 });
             }
@@ -223,7 +317,7 @@ function SearchInterval(trackID) {
                 document.querySelector("#existing-tag-blurb").style.display = "block";
             }
             r.filter(e => e.AlreadyOnTrack == 0).forEach(sr => {
-                AddTagToUI(sr.TagName, document.querySelector("#is-artist").checked, trackID, "#search-results", {
+                AddTagToUI(sr.TagName, sr.Color, isArtist, trackID, "#search-results", {
                     AddParams: true
                 });
             });
@@ -250,24 +344,83 @@ function HandleDeleteTagResponse(trackID) {
     RefreshLists(true, trackID);
 }
 
-function HandleEditTagResponse(trackID) {
-    RefreshLists(true, trackID);
+function HandleEditTagResponse(trackID, validationErrors) {
+    if(validationErrors.length === 0) {
+        RefreshLists(true, trackID);
+        document.querySelector("#edit-modal").close();
+    } else {
+        validationErrors.forEach(v => {
+            alert(v);
+        });
+    }
 }
 
 function RefreshLists(shouldRefreshAllTagList, trackID) {
     fetch(`http://localhost:8080/api/tag/refresh-lists/${trackID}/${shouldRefreshAllTagList ? 1 : 0}`).then((f) => {
         f.json().then(r => {
             document.querySelector("#current-tags-box").innerHTML = "";
-            r.currentTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, trackID, "#current-tags-box", {
+            console.log(r.currentTags);
+            r.currentTags.forEach(t => AddTagToUI(t.TagName, t.Color, t.IsArtistTag, trackID, "#current-tags-box", {
                 RemoveParams: true
             }));
             if(r.allTags) {
                 document.querySelector("#all-tags-box").innerHTML = "";
-                r.allTags.forEach(t => AddTagToUI(t.TagName, t.IsArtistTag, trackID, "#all-tags-box", {
-                    AddParams: true,
-                    DeleteParams: true,
-                    EditParams: true
-                }, r.currentTags.filter(ct => ct.TagName == t.TagName).length > 0));
+                let sortedAllTags = r.allTags;
+                fetch(`http://localhost:8080/api/settings/sort/get`)
+                .then((sortr) => {
+                    sortr.json().then((j) => {
+                        let sortOrder = "date";
+                        if(j.length > 0) {
+                            sortOrder = j[0].InfoValue;
+                        }
+                        document.querySelector("#all-tag-sort").value = sortOrder;
+                        document.querySelector(`#all-tag-sort option[value="${sortOrder}"]`).setAttribute("selected", null);
+                        switch(sortOrder) {
+                            case "date":
+                                break;
+                            case "date-d":
+                                sortedAllTags = sortedAllTags.reverse();
+                                break;
+                            case "alpha":
+                                sortedAllTags = sortedAllTags.sort((t1, t2) => {
+                                    if(t1.TagName > t2.TagName) {
+                                        return 1;
+                                    }
+                                    else if (t1.TagName < t2.TagName) {
+                                        return -1;
+                                    }
+                                    else {
+                                        return 0;
+                                    }
+                                });
+                                break;
+                            case "alpha-d":
+                                sortedAllTags = sortedAllTags.sort((t1, t2) => {
+                                    if(t1.TagName > t2.TagName) {
+                                        return -1;
+                                    }
+                                    else if (t1.TagName < t2.TagName) {
+                                        return 1;
+                                    }
+                                    else {
+                                        return 0;
+                                    }
+                                });
+                                break;
+                            case "color":
+                                sortedAllTags = sortedAllTags.sort((t1, t2) => parseInt(t2.Color.substring(1), 16) - parseInt(t1.Color.substring(1), 16));
+                                break;
+                            case "color-d":
+                                sortedAllTags = sortedAllTags.sort((t1, t2) => parseInt(t1.Color.substring(1), 16) - parseInt(t2.Color.substring(1), 16));
+                                break;
+                        }
+                        sortedAllTags.forEach(t => AddTagToUI(t.TagName, t.Color, t.IsArtistTag, trackID, "#all-tags-box", {
+                            AddParams: true,
+                            DeleteParams: true,
+                            EditParams: true
+                        }, r.currentTags.filter(ct => ct.TagName == t.TagName).length > 0));
+                    });
+                });
             }
         });
     });

@@ -14,7 +14,11 @@ import {
     RemoveTag,
     SearchAvailableTags,
     SearchTracks,
-    UpdateTag
+    UpdateTag,
+    GetTagExists,
+    GetSortOrderSetting,
+    UpsertSortOrderSetting,
+    GetTracksHavingTag
 } from "./db-client.js";
 import {
     BasicGetFile,
@@ -95,19 +99,27 @@ export async function GetAvailableTagSearchRestults(stringQuery, trackID) {
     return searchResults;
 }
 
-export async function AddTag(tagName, trackID, artist=false) {
+export async function AddTag(tagName, color, trackID, artist=false) {
     if(!artist) {
-        const addResult = await AddTagForTrack(tagName, trackID);
+        const addResult = await AddTagForTrack(tagName, color, trackID);
         return {
             shouldRefreshAllTagList: !!addResult.addedNewTag[0],
             rejectedTagAdd: !addResult.addedTrackTag[0]
         }
     }
-    
 }
 
-export async function EditTag(tagName, newText) {
-    await UpdateTag(tagName, newText);
+export async function EditTag(tagName, newText, newColor) {
+    await UpdateTag(tagName, newText, newColor);
+}
+
+export async function ValidateEditTag(tagName, newText) {
+    if(tagName != newText) {
+        if(await GetTagExists(newText)) {
+            return ["Tag name already exists"];
+        }
+    }
+    return [];
 }
 
 export async function GetDeletionCounts(tagName) {
@@ -148,12 +160,15 @@ export async function IsInstalled() {
     if(evidenceResult?.length > 0) {
         versionResult = await GetCurrentVersionOfInstallation();
     }
-    let versionFile = await BasicGetFile("./versions.json");
+    let versionFile = await BasicGetFile("./schema/versions.json");
     versionFile = JSON.parse(versionFile);
+    const existingVersionOrUndefined = versionResult?.length > 0 ? versionResult[0].InfoValue : undefined;
+    
     return {
         installed: evidenceResult?.length > 0,
-        existingVersion: versionResult?.length > 0 ? versionResult[0].InfoValue : undefined,
-        presentVersion: versionFile.presentVersion
+        existingVersion: existingVersionOrUndefined,
+        presentVersion: versionFile.presentVersion,
+        allVersions: versionFile.upgradeNotes.map(u => u.Version)
     };
 }
 
@@ -167,4 +182,16 @@ export async function ExecuteRawQuery(query, limitOrTrue) {
         limited: limited,
         results: result.results
     };
+}
+
+export async function GetSortOrder() {
+    return await GetSortOrderSetting();
+}
+
+export async function SetSortOrder(newSortOrder) {
+    return await UpsertSortOrderSetting(newSortOrder);
+}
+
+export async function GetTrackDataByTagName(tagName) {
+    return await GetTracksHavingTag(tagName);
 }

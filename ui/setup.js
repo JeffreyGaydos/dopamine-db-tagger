@@ -1,18 +1,21 @@
+let installVersion = 0.0;
+
 window.addEventListener("DOMContentLoaded", () => {
     UpdateInstallationDetails();
     PopulateExistingConfigs();
     document.querySelector("#install").addEventListener("click", () => {
-        fetch(`http://localhost:8080/api/setup/install`).then((f) => {
+        fetch(`http://localhost:8080/api/setup/install/${installVersion}`).then((f) => {
             f.json().then(r => {
                 console.log(r);
                 if(r === true) {
                     alert("Installed successfully");
                     UpdateInstallationDetails();
                     AddErrorBox(undefined);
+                } else if (r === false) {
+                    AddErrorBox("Installation failed. Version could not be found in config or was the same as the current version.");
                 } else {
-                    if(confirm(`Upgrading to this version includes breaking changes: ${r}. Confirm to proceed with the installation anyways`)) {
-                        console.log("YOO");
-                        fetch(`http://localhost:8080/api/setup/install/force`).then((f2) => {
+                    if(confirm(`Warning(s):\n${r}\n\nConfirm to proceed with the installation anyways`)) {
+                        fetch(`http://localhost:8080/api/setup/install/${installVersion}/force`).then((f2) => {
                             f2.json().then(r2 => {
                                 console.log(r2);
                                 if(r2 === true) {
@@ -21,23 +24,29 @@ window.addEventListener("DOMContentLoaded", () => {
                                     UpdateInstallationDetails();
                                 } else {
                                     alert("Error while installing. Check the server's logs");
+                                    UpdateInstallationDetails();
                                 }
                             }, (e) => {
                                 AddErrorBox(`Could not install as forced. Got error: ${e}`);
+                                UpdateInstallationDetails();
                             });
                         }, (e) => {
                             AddErrorBox(`Could not install as forced. Got error: ${e}`);
+                            UpdateInstallationDetails();
                         });
                     } else {
                         alert("Installation cancelled.");
                         AddErrorBox(undefined);
+                        UpdateInstallationDetails();
                     }
                 }
             }, (e) => {
                 AddErrorBox(`Could not install. Got error: ${e}`);
+                UpdateInstallationDetails();
             });
         }, (e) => {
             AddErrorBox(`Could not install. Got error: ${e}`);
+            UpdateInstallationDetails();
         });
     });
 
@@ -51,6 +60,10 @@ window.addEventListener("DOMContentLoaded", () => {
                 AddErrorBox(`Could not uninstall. Got error: ${e}`);
             });
         }
+    });
+
+    document.querySelector("#version-selection").addEventListener("change", (e) => {
+        installVersion = e.target.value;
     });
 
     document.querySelector("#db-config-info").addEventListener("click", () => {
@@ -70,38 +83,47 @@ window.addEventListener("DOMContentLoaded", () => {
 function UpdateInstallationDetails() {
     document.querySelector("#installed-info").style.display = "none";
     document.querySelector("#uninstalled-info").style.display = "none";
-    document.querySelector("#update-installation").style.display = "none";
-    document.querySelector("#new-installation").style.display = "none";
     fetch(`http://localhost:8080/api/setup/status`).then((f) => {
         f.json().then(r => {
             console.log(r);
             if(r.installed) {
                 document.querySelector("#installed-info").style.display = "inline";
-                document.querySelector("#update-installation").style.display = "inline";
                 document.querySelector("#uninstall").removeAttribute("disabled");
             }
             else {
                 document.querySelector("#uninstalled-info").style.display = "inline";
-                document.querySelector("#new-installation").style.display = "inline";
                 document.querySelector("#uninstall").setAttribute("disabled", null);
-            }
-
-            if(r.existingVersion === r.presentVersion) {
-                document.querySelector("#install").setAttribute("disabled", null);
-                document.querySelector("#install").setAttribute("title", `Version ${r.presentVersion} is already installed.`);
-            } else {
-                document.querySelector("#install").removeAttribute("disabled");
-                document.querySelector("#install").removeAttribute("title");
+                document.querySelector("#uninstall").setAttribute("title", "Cannot uninstall again; already uninstalled");
             }
 
             document.querySelectorAll(".existing-version").forEach(e => {
                 e.innerText = r.existingVersion;
-            })
+            });
             document.querySelectorAll(".new-version").forEach(e => {
                 e.innerText = r.presentVersion;
-            })
-        });        
+            });
+
+            document.querySelector("#version-selection").innerHTML = ""; //remove any placeholder values
+            for(let i = 0; i < r.allVersions.length; i++) {
+                if(r.allVersions[i] == "0.0") continue;
+                document.querySelector("#version-selection").appendChild(CreateVersionSelectionOption(r.allVersions[i], r.presentVersion, r.existingVersion));
+            }
+            
+            const selectedOptionIndex = document.querySelector("#version-selection").selectedIndex;
+            installVersion = document.querySelector(`#version-selection option:nth-child(${selectedOptionIndex + 1})`).value;
+        });
     });
+}
+
+function CreateVersionSelectionOption(versionString, presentVersion, existingVersion) {
+    var op = document.createElement("OPTION");
+    op.innerText = `Version ${versionString}${(versionString == presentVersion ? " (Latest)" : "")}`;
+    op.value = versionString;
+    if(versionString == existingVersion) {
+        op.setAttribute("disabled", null);
+        op.setAttribute("title", "This version is already installed");
+    }
+    return op;
 }
 
 function PopulateExistingConfigs() {

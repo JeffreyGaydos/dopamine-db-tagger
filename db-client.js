@@ -115,7 +115,7 @@ export async function GetAllTags() {
     const myDb = await GetDBCached();
     if(!myDb) return undefined;
     const allTagResult = await myDb.all(`
-        SELECT TagName FROM Tags
+        SELECT TagName, Color FROM Tags
     `);
 
     return allTagResult;
@@ -169,6 +169,7 @@ export async function SearchAvailableTags(stringQuery, trackID) {
     return await myDb.all(`
         SELECT
             T.TagName,
+            T.Color,
             IIF(T.TagName = $s, 1, 0) AS ExactMatch,
             IIF(TA.TrackID IS NULL, 0, 1) AS AlreadyOnTrack
         FROM Tags T
@@ -184,19 +185,19 @@ export async function SearchAvailableTags(stringQuery, trackID) {
     );
 }
 
-export async function AddTagForTrack(tagName, trackID) {
+export async function AddTagForTrack(tagName, color, trackID) {
     const myDb = await GetDBCached();
     if(!myDb) return undefined;
     const addedNewTag = await myDb.all(`
-        INSERT INTO Tags (TagName)
-        SELECT $s
+        INSERT INTO Tags (TagName, Color)
+        SELECT $s, $c
         WHERE NOT EXISTS (
             SELECT NULL
             FROM Tags
             WHERE TagName = $s
         )
-        RETURNING TagName
-    `, { $s: tagName });
+        RETURNING TagName, Color
+    `, { $s: tagName, $c: color });
 
     const addedTrackTag = await myDb.all(`
         INSERT INTO TaggedTracks (TrackID, TagName)
@@ -211,9 +212,21 @@ export async function AddTagForTrack(tagName, trackID) {
     `, { $s: tagName, $t: trackID });
 
     return {
-        addedNewTag, 
+        addedNewTag,
         addedTrackTag
     };
+}
+
+export async function GetTagExists(tagName) {
+    const myDb = await GetDBCached();
+    if(!myDb) return undefined;
+    const tagExists = await myDb.all(`
+        SELECT NULL
+        FROM Tags
+        WHERE TagName = $s
+    `, { $s: tagName });
+
+    return tagExists.length > 0;
 }
 
 export async function AddArtistTag(tagName, trackID) {
@@ -280,14 +293,14 @@ export async function DeleteTag(tagName) {
     `, { $s: tagName });
 }
 
-export async function UpdateTag(tagName, newTagName) {
+export async function UpdateTag(tagName, newTagName, newColor) {
     const myDb = await GetDBCached();
     if(!myDb) return undefined;
     const updateTag = myDb.all(`
         UPDATE Tags
-        SET TagName = $n
+        SET TagName = $n, Color = $c
         WHERE TagName = $s
-    `, { $s: tagName, $n: newTagName });
+    `, { $s: tagName, $n: newTagName, $c: newColor });
 
     const updateTracks = myDb.all(`
         UPDATE TaggedTracks
@@ -343,6 +356,35 @@ export async function GetCurrentVersionOfInstallation() {
     return versionResult;
 }
 
+export async function GetSortOrderSetting() {
+    const myDb = await GetDBCached();
+    if(!myDb) return undefined;
+    const sortResult = await myDb.all(`
+        SELECT InfoValue FROM DBTaggerInfo WHERE InfoName = 'AllTagsSortOrder'
+    `);
+    return sortResult;
+}
+
+export async function UpsertSortOrderSetting(newSetting) {
+    const myDb = await GetDBCached();
+    if(!myDb) return undefined;
+    await myDb.all(`
+        INSERT INTO DBTaggerInfo (InfoValue, InfoName)
+        SELECT $d, 'AllTagsSortOrder'
+        WHERE NOT EXISTS (
+            SELECT NULL
+            FROM DBTaggerInfo
+            WHERE InfoName = 'AllTagsSortOrder'
+        )
+    `, { $d: newSetting });
+
+    await myDb.all(`
+        UPDATE DBTaggerInfo
+        SET InfoValue = $d
+        WHERE InfoName = 'AllTagsSortOrder'
+    `, { $d: newSetting });
+}
+
 export async function ExecuteRaw(query, limitOrTrueForAll) {
     const myDb = await GetRODBCached();
     if(!myDb) return undefined;
@@ -360,4 +402,18 @@ export async function ExecuteRaw(query, limitOrTrueForAll) {
         results,
         limited
     };
+}
+
+export async function GetTracksHavingTag(tagName) {
+    const myDb = await GetDBCached();
+    if(!myDb) return undefined;
+    const tracksAffected = await myDb.all(`
+        SELECT Track.TrackID, Track.TrackTitle
+        FROM TaggedAll
+        JOIN Track
+            ON Track.TrackID = TaggedAll.TrackID
+        WHERE TaggedAll.TagName = $s
+    `, { $s: tagName });
+    
+    return tracksAffected;
 }

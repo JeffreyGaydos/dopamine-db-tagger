@@ -1,4 +1,4 @@
-# Dopamine DB Tagger
+# <img src="./tags.ico" width="40" height="40"> Dopamine DB Tagger
 Standing on top of the [Dopamine](https://github.com/digimezzo/dopamine) SQLite database, runs users through their tracks in various ways so that they can add more descriptors to their music. After tags are added, users can then export different queries of tags as playlist files compatible with various platforms.
 
 <img src="./readme_assets/Tagging.png">

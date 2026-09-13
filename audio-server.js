@@ -10,7 +10,7 @@ async function GetRepoPathCached() {
     return audioRepositoryPath;
 }
 
-export async function GetAudioResource(url, mime, res) {
+export async function GetAudioResource(url, mime, res, body) {
     const basePath = await GetRepoPathCached();
     const audioRequestPath = `${basePath}${decodeURI(url)}`;
     fs.readFile(audioRequestPath, function(err, data) {
