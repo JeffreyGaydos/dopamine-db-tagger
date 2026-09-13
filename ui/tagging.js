@@ -89,6 +89,35 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    document.querySelector("#edit-affected-tracks-list").addEventListener("toggle", (e) => {
+        if (e.target.open && e.target.querySelector("ul").innerHTML == "") { 
+            const liLoading = document.createElement("LI");
+            liLoading.innerText = "Loading...";
+            e.target.querySelector("ul").appendChild(liLoading);
+            const tagName = document.querySelector("#edit-modal form #tag-name").value;
+            fetch(`http://localhost:8080/api/search/trackswithtag/${tagName}`)
+                .then((r) => {
+                    r.json().then(j => {
+                        const listParent = e.target.querySelector("ul");
+                        listParent.innerHTML = "";
+                        j.forEach(t => {
+                            const trackLinkLi = document.createElement("LI");
+                            const trackLinkA = document.createElement("A");
+                            trackLinkA.href = `./${t.TrackID}`;
+                            trackLinkA.innerText = t.TrackTitle;
+                            trackLinkLi.appendChild(trackLinkA);
+                            listParent.appendChild(trackLinkLi);
+                        });
+                    });
+                });
+        }
+    });
+
+    // This is so that we grab a fresh list of affected titles if we open a modal for another tag, but only call the trackswithtag endpoint once if we are interacting in the same modal
+    document.querySelector("#edit-modal").addEventListener("close", () => {
+        document.querySelector("#edit-affected-tracks-list ul").innerHTML = "";
+    });
+
     // mostly for sorting the all tags
     RefreshLists(true, responseJson.TrackID);
 });
@@ -225,11 +254,16 @@ function AddTagToUI(tagName, color, isArtist, trackID, boxSelector, endpoints = 
         eButton.addEventListener("click", (e) => {
             e.preventDefault();
             e.stopPropagation();
+            editModal.querySelector("details").style.display = "block";
+            editModal.querySelector("details").removeAttribute("open");
             if(!editLoading) {
                 editLoading = true;
                 fetch(`http://localhost:8080/api/tag/usage/${encodeURIComponent(tagName)}`).then((f) => {
                     f.json().then(r => {
                         const baseMessage = `Modifying the tag "${tagName}" will effect ${r.trackCount} track tags, ${r.artistCount} artist tags, ${r.allCount} total tracks.`;
+                        if(r.allCount == 0) {
+                            editModal.querySelector("details").style.display = "none";
+                        }
                         editModal.querySelector("p").innerText = baseMessage;
                         editModal.querySelector("#tag-name").value = tagName;
                         editModal.querySelector("#new-tag-name").value = tagName;

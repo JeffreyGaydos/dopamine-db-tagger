@@ -403,3 +403,17 @@ export async function ExecuteRaw(query, limitOrTrueForAll) {
         limited
     };
 }
+
+export async function GetTracksHavingTag(tagName) {
+    const myDb = await GetDBCached();
+    if(!myDb) return undefined;
+    const tracksAffected = await myDb.all(`
+        SELECT Track.TrackID, Track.TrackTitle
+        FROM TaggedAll
+        JOIN Track
+            ON Track.TrackID = TaggedAll.TrackID
+        WHERE TaggedAll.TagName = $s
+    `, { $s: tagName });
+    
+    return tracksAffected;
+}

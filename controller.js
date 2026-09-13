@@ -17,7 +17,8 @@ import {
     UpdateTag,
     GetTagExists,
     GetSortOrderSetting,
-    UpsertSortOrderSetting
+    UpsertSortOrderSetting,
+    GetTracksHavingTag
 } from "./db-client.js";
 import {
     BasicGetFile,
@@ -189,4 +190,8 @@ export async function GetSortOrder() {
 
 export async function SetSortOrder(newSortOrder) {
     return await UpsertSortOrderSetting(newSortOrder);
+}
+
+export async function GetTrackDataByTagName(tagName) {
+    return await GetTracksHavingTag(tagName);
 }

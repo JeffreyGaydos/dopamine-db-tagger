@@ -95,11 +95,9 @@
                 <button command="close" commandfor="edit-modal">&Cross;</button>
             </div>
             <p>Modifying this tag will update X number of tracks</p>
-            <details>
+            <details id="edit-affected-tracks-list">
                 <summary>Show full list of modified tracks:</summary>
-                <ul>
-                    <li>Loading...</li>
-                </ul>
+                <ul></ul>
             </details>
             <br/><br/>
             <form method="POST" action="../../api/tag/edit" target="">
