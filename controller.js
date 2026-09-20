@@ -62,10 +62,16 @@ export async function Landing() {
     return groupedArtists;
 }
 
+export async function GetAdjacentTracks(trackID, sequenceType, sequenceOrder) {
+    return {
+        pageInfo: await GetNextPreviousTrackID(trackID, sequenceType, sequenceOrder)
+    };
+}
+
 // To figure out what exact audio file path needs to go into the baseHTML, plus the data that needs to come after like a normal response
-export async function Tagging(trackID, baseHtml) {
+export async function Tagging(trackID, sequenceType, sequenceOrder, baseHtml) {
     const trackData = await GetAllTrackData(trackID);
-    const pageInfo = await GetNextPreviousTrackID(trackID);
+    const pageInfo = await GetNextPreviousTrackID(trackID, sequenceType, sequenceOrder);
     const currentTags = await GetAllTagsForTrack(trackID);
     const allTags = await GetAllTags();
 

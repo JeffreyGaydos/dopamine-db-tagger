@@ -1,5 +1,4 @@
-import fs from 'node:fs';
-import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled, ExecuteRawQuery, ValidateEditTag, GetSortOrder, SetSortOrder, GetTrackDataByTagName } from './controller.js';
+import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled, ExecuteRawQuery, ValidateEditTag, GetSortOrder, SetSortOrder, GetTrackDataByTagName, GetAdjacentTracks } from './controller.js';
 import Install from './install.js';
 import Uninstall from './uninstall.js';
 import { GetConfigJSONCached, SetConfigJSON } from './utilities.js';
@@ -61,6 +60,18 @@ async function RouteAPIEndpoints(url, body) {
                         apiData: tracks,
                         modified: true
                     };
+                case "adjacent":
+                    if(urlBits[3]?.match(/[1-9]+[0-9]*/)) {
+                        const trackID = urlBits[3].split("?")[0];
+                        // Assumes order of parameters is static
+                        const seqType = urlBits[3].split("?")[1].split("&")[0].split("=")[1];
+                        const orderAsc = urlBits[3].split("?")[1].split("&")[1].split("=")[1] === "true";
+                        const apiData = await GetAdjacentTracks(trackID, seqType, orderAsc);
+                        return {
+                            apiData,
+                            modified: true
+                        };
+                    }
             }
         case "tag":
             switch(urlBits[2]) {

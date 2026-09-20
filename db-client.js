@@ -84,30 +84,347 @@ export async function GetAllTrackData(trackID) {
     return result[0];
 }
 
-export async function GetNextPreviousTrackID(trackID) {
+export async function GetNextPreviousTrackID(trackID, sequenceType, sequenceOrder) {
     const myDb = await GetDBCached();
     if(!myDb) return undefined;
-    const nextResult = await myDb.all(`
-        SELECT TrackID
-        FROM Track
-        WHERE TrackID > $t
-        ORDER BY TrackID ASC
-        LIMIT 1
-    `, { $t: trackID }
-    );
 
-    const previousResult = await myDb.all(`
-        SELECT TrackID
-        FROM Track
-        WHERE TrackID < $t
-        ORDER BY TrackID DESC
-        LIMIT 1
-    `, { $t: trackID }
-    );
+    let sqlOrderColumn = "";
+    let nextResult;
+    let previousResult;
+    switch(sequenceType) {
+        case "a-t":
+        case "a-a":
+        case "a-l":
+            switch(sequenceType) {
+                case "a-t":
+                    sqlOrderColumn = "TrackTitle";
+                    break;
+                case "a-a":
+                    sqlOrderColumn = "coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists)";
+                    break;
+                case "a-l":
+                    sqlOrderColumn = "AlbumTitle"; //TODO make tie breaker be TrackNumber instead of TrackID since that is now unique
+                    break;
+            }
 
-    return {
-        next: nextResult[0].TrackID,
-        previous: previousResult[0].TrackID,
+            previousResult = await myDb.all(`
+                SELECT TrackID
+                FROM Track
+                WHERE (
+                    ${sqlOrderColumn} = (
+                        SELECT ${sqlOrderColumn}
+                        FROM Track
+                        WHERE TrackID = $t
+                    )
+                    AND
+                    ${(sqlOrderColumn === "AlbumTitle"
+                        ? `TrackNumber < (
+                            SELECT TrackNumber
+                            FROM Track
+                            WHERE TrackID = $t
+                        )`
+                        : "TrackID < $t"
+                    )}
+                )
+                ORDER BY ${sqlOrderColumn} DESC, ${(sqlOrderColumn === "AlbumTitle" ? "TrackNumber" : "TrackID")} DESC
+                LIMIT 1
+            `, { $t: trackID }
+            );
+
+            if(previousResult.length === 0) {
+                previousResult = await myDb.all(`
+                    SELECT TrackID
+                    FROM Track
+                    WHERE (
+                        ${sqlOrderColumn} < (
+                            SELECT ${sqlOrderColumn}
+                            FROM Track
+                            WHERE TrackID = $t
+                        )
+                    )
+                    ORDER BY ${sqlOrderColumn} DESC, ${(sqlOrderColumn === "AlbumTitle" ? "TrackNumber" : "TrackID")} DESC
+                    LIMIT 1
+                `, { $t: trackID }
+                );
+            }
+
+            nextResult = await myDb.all(`
+                SELECT TrackID
+                FROM Track
+                WHERE (
+                    ${sqlOrderColumn} = (
+                        SELECT ${sqlOrderColumn}
+                        FROM Track
+                        WHERE TrackID = $t
+                    )
+                    AND
+                    ${(sqlOrderColumn === "AlbumTitle"
+                        ? `TrackNumber > (
+                            SELECT TrackNumber
+                            FROM Track
+                            WHERE TrackID = $t
+                        )`
+                        : "TrackID > $t"
+                    )}
+                )
+                ORDER BY ${sqlOrderColumn} ASC, ${(sqlOrderColumn === "AlbumTitle" ? "TrackNumber" : "TrackID")} ASC
+                LIMIT 1
+            `, { $t: trackID }
+            );
+
+            if(nextResult.length === 0) {
+                nextResult = await myDb.all(`
+                    SELECT TrackID
+                    FROM Track
+                    WHERE (
+                        ${sqlOrderColumn} > (
+                            SELECT ${sqlOrderColumn}
+                            FROM Track
+                            WHERE TrackID = $t
+                        )
+                    )
+                    ORDER BY ${sqlOrderColumn} ASC, ${(sqlOrderColumn === "AlbumTitle" ? "TrackNumber" : "TrackID")} ASC
+                    LIMIT 1
+                `, { $t: trackID }
+                );
+            }
+            break;
+        case "c-t":
+            previousResult = await myDb.all(`
+                SELECT TrackID
+                FROM Track
+                WHERE TrackID < $t
+                ORDER BY TrackID DESC
+                LIMIT 1
+            `, { $t: trackID }
+            );
+
+            nextResult = await myDb.all(`
+                SELECT TrackID
+                FROM Track
+                WHERE TrackID > $t
+                ORDER BY TrackID ASC
+                LIMIT 1
+            `, { $t: trackID }
+            )
+            break;
+        case "c-a":
+            previousResult = await myDb.all(`
+                SELECT TrackID FROM Track
+                JOIN (
+                    SELECT MIN(TrackID) AS MinID, coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists) AS ArtistsRaw FROM Track
+                    GROUP BY coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists)
+                    ORDER BY MIN(TrackID)
+                ) SubQ
+                    ON SubQ.ArtistsRaw = coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists)
+                WHERE SubQ.MinID = (
+                    SELECT MIN(TrackID) FROM Track
+                    WHERE coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists) = (
+                        SELECT coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists)
+                        FROM Track
+                        WHERE TrackID = $t
+                    )
+                )
+                AND TrackID < $t
+                ORDER BY SubQ.MinID DESC, TrackID DESC
+                LIMIT 1
+            `, { $t: trackID }
+            );
+
+            if(previousResult.length === 0) {
+                previousResult = await myDb.all(`
+                    SELECT TrackID FROM Track
+                    JOIN (
+                        SELECT MIN(TrackID) AS MinID, coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists) AS ArtistsRaw FROM Track
+                        GROUP BY coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists)
+                        ORDER BY MIN(TrackID)
+                    ) SubQ
+                        ON SubQ.ArtistsRaw = coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists)
+                    WHERE SubQ.MinID < (
+                        SELECT MIN(TrackID) FROM Track
+                        WHERE coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists) = (
+                            SELECT coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists)
+                            FROM Track
+                            WHERE TrackID = $t
+                        )
+                    )
+                    ORDER BY SubQ.MinID DESC, TrackID DESC
+                    LIMIT 1
+                `, { $t: trackID }
+                );
+            }
+
+            nextResult = await myDb.all(`
+                SELECT TrackID FROM Track
+                JOIN (
+                    SELECT MIN(TrackID) AS MinID, coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists) AS ArtistsRaw FROM Track
+                    GROUP BY coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists)
+                    ORDER BY MIN(TrackID)
+                ) SubQ
+                    ON SubQ.ArtistsRaw = coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists)
+                WHERE SubQ.MinID = (
+                    SELECT MIN(TrackID) FROM Track
+                    WHERE coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists) = (
+                        SELECT coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists)
+                        FROM Track
+                        WHERE TrackID = $t
+                    )
+                )
+                AND TrackID > $t
+                ORDER BY SubQ.MinID ASC, TrackID ASC
+                LIMIT 1
+            `, { $t: trackID }
+            );
+
+            if(nextResult.length === 0) {
+                nextResult = await myDb.all(`
+                    SELECT TrackID FROM Track
+                    JOIN (
+                        SELECT MIN(TrackID) AS MinID, coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists) AS ArtistsRaw FROM Track
+                        GROUP BY coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists)
+                        ORDER BY MIN(TrackID)
+                    ) SubQ
+                        ON SubQ.ArtistsRaw = coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists)
+                    WHERE SubQ.MinID > (
+                        SELECT MIN(TrackID) FROM Track
+                        WHERE coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists) = (
+                            SELECT coalesce(iif(Artists = '', AlbumArtists, Artists), AlbumArtists)
+                            FROM Track
+                            WHERE TrackID = $t
+                        )
+                    )
+                    ORDER BY SubQ.MinID ASC, TrackID ASC
+                    LIMIT 1
+                `, { $t: trackID }
+                );
+            };
+            break;
+        case "c-l":
+            previousResult = await myDb.all(`
+                SELECT TrackID FROM Track
+                JOIN (
+                    SELECT MIN(TrackID) AS MinID, AlbumTitle AS SubAlbum FROM Track
+                    GROUP BY AlbumTitle
+                    ORDER BY MIN(TrackID)
+                ) SubQ
+                    ON SubQ.SubAlbum = AlbumTitle
+                WHERE SubQ.MinID = (
+                    SELECT MIN(TrackID) FROM Track
+                    WHERE AlbumTitle = (
+                        SELECT AlbumTitle
+                        FROM Track
+                        WHERE TrackID = $t
+                    )
+                )
+                AND TrackNumber < (
+                    SELECT TrackNumber
+                    FROM Track
+                    WHERE TrackID = $t
+                )
+                ORDER BY SubQ.MinID DESC, TrackNumber DESC
+                LIMIT 1
+            `, { $t: trackID }
+            );
+
+            if(previousResult.length === 0) {
+                previousResult = await myDb.all(`
+                    SELECT TrackID FROM Track
+                    JOIN (
+                        SELECT MIN(TrackID) AS MinID, AlbumTitle AS SubAlbum FROM Track
+                        GROUP BY AlbumTitle
+                        ORDER BY MIN(TrackID)
+                    ) SubQ
+                        ON SubQ.SubAlbum = AlbumTitle
+                    WHERE SubQ.MinID < (
+                        SELECT MIN(TrackID) FROM Track
+                        WHERE AlbumTitle = (
+                            SELECT AlbumTitle
+                            FROM Track
+                            WHERE TrackID = $t
+                        )
+                    )
+                    ORDER BY SubQ.MinID DESC, TrackNumber DESC
+                    LIMIT 1
+                `, { $t: trackID }
+                );  
+            }
+
+            nextResult = await myDb.all(`
+                SELECT TrackID FROM Track
+                JOIN (
+                    SELECT MIN(TrackID) AS MinID, AlbumTitle AS SubAlbum FROM Track
+                    GROUP BY AlbumTitle
+                    ORDER BY MIN(TrackID)
+                ) SubQ
+                    ON SubQ.SubAlbum = AlbumTitle
+                WHERE SubQ.MinID = (
+                    SELECT MIN(TrackID) FROM Track
+                    WHERE AlbumTitle = (
+                        SELECT AlbumTitle
+                        FROM Track
+                        WHERE TrackID = $t
+                    )
+                )
+                AND TrackNumber > (
+                    SELECT TrackNumber
+                    FROM Track
+                    WHERE TrackID = $t
+                )
+                ORDER BY SubQ.MinID ASC, TrackNumber ASC
+                LIMIT 1
+            `, { $t: trackID }
+            );
+
+            if(nextResult.length === 0) {
+                nextResult = await myDb.all(`
+                    SELECT TrackID FROM Track
+                    JOIN (
+                        SELECT MIN(TrackID) AS MinID, AlbumTitle AS SubAlbum FROM Track
+                        GROUP BY AlbumTitle
+                        ORDER BY MIN(TrackID)
+                    ) SubQ
+                        ON SubQ.SubAlbum = AlbumTitle
+                    WHERE SubQ.MinID > (
+                        SELECT MIN(TrackID) FROM Track
+                        WHERE AlbumTitle = (
+                            SELECT AlbumTitle
+                            FROM Track
+                            WHERE TrackID = $t
+                        )
+                    )
+                    ORDER BY SubQ.MinID ASC, TrackNumber ASC
+                    LIMIT 1
+                `, { $t: trackID }
+                );  
+            }
+            break;
+        case "r":
+            nextResult = await myDb.all(`
+                SELECT * FROM Track
+                WHERE ROWID = (
+                    SELECT abs(
+                        random() % (
+                            SELECT COUNT(*)
+                            FROM Track
+                        )
+                    )
+                )
+            `);
+
+            previousResult = nextResult; //Random has no concept of forwards/backwards
+            break;
+    }
+
+    if(sequenceOrder) {
+        return {
+            next: nextResult?.[0]?.TrackID,
+            previous: previousResult?.[0]?.TrackID
+        };
+    } else {
+        return {
+            previous: nextResult?.[0]?.TrackID,
+            next: previousResult?.[0]?.TrackID
+        };
     }
 }
 
