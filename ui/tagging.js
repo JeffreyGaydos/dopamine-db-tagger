@@ -13,7 +13,32 @@ window.addEventListener("DOMContentLoaded", () => {
     });
     var responseJson = JSON.parse(document.querySelector("#response").innerHTML);
     RenderMetadata(responseJson);
-    AddHandlers(responseJson);
+
+    document.querySelectorAll("#sequence-type, #sequence-order").forEach(el => {
+        el.addEventListener("change", () => {
+            const currentSequence = document.querySelector("#sequence-type").value;
+            const currentOrder = document.querySelector("#sequence-order").checked;
+            fetch(`http://localhost:8080/api/search/adjacent/${responseJson.TrackID}?seq=${currentSequence}&dir=${currentOrder}`).then((f) => {
+                f.json().then(j => {
+                    console.log({j});
+                    SetNextPreviousButtonLinks(j.pageInfo.next, j.pageInfo.previous);
+                })
+            });
+        });
+    });
+    //set the inputs to match the URL first
+    const startingSeq = document.location.search.split("&")?.[0]?.split("=")?.[1] ?? "c-t";
+    const startingOrder = (document.location.search.split("&")?.[1]?.split("=")?.[1] ?? "true") === "true";
+    document.querySelector("#sequence-type").value = startingSeq;
+    if(!!startingOrder) {
+        document.querySelector("#sequence-order").setAttribute("checked", undefined);
+    } else {
+        console.log("Tried our best here...");
+        document.querySelector("#sequence-order").removeAttribute("checked");
+    }
+
+    SetNextPreviousButtonLinks(responseJson.pageInfo.next, responseJson.pageInfo.previous);
+    
     console.log(responseJson.currentTags[0]);
     responseJson.currentTags.forEach(t => AddTagToUI(t.TagName, t.Color, t.IsArtistTag, responseJson.TrackID, "#current-tags-box", {
         RemoveParams: true
@@ -156,9 +181,12 @@ function ReturnIfExistsAndNotSet(normalized, rawData) {
     }
 }
 
-function AddHandlers(json) {
-    document.querySelector("#previous-track").href = `./${json.pageInfo.previous}`;
-    document.querySelector("#next-track").href = `./${json.pageInfo.next}`;
+function SetNextPreviousButtonLinks(nextTrackID, previousTrackID) {
+    const currentSequence = document.querySelector("#sequence-type").value;
+    const currentOrder = document.querySelector("#sequence-order").checked;
+
+    document.querySelector("#previous-track").href = `./${previousTrackID}?seq=${currentSequence}&dir=${currentOrder}`;
+    document.querySelector("#next-track").href = `./${nextTrackID}?seq=${currentSequence}&dir=${currentOrder}`;
 }
 
 let addLoading = false; //kind of used as a debouncer

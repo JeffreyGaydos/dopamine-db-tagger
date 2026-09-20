@@ -39,7 +39,11 @@ async function RouteEndpoints(url, currentData) {
                     if(urlBits[2]?.match(/[1-9]+[0-9]*/)) {
                         //Since this endpoint doesn't reference 1 page, but many, we have to grab base data
                         let baseHtml = await BasicGetFile(`./${urlBits[0]}/${urlBits[1]}.html`);
-                        const taggingData = await Tagging(urlBits[2], baseHtml);
+                        const trackID = urlBits[2].split("?")[0];
+                        // Assumes order of parameters is static
+                        const seqType = (urlBits[2].split("?")?.[1]?.split("&")?.[0]?.split("=")?.[1] ?? "c-t");
+                        const orderAsc = (urlBits[2].split("?")?.[1]?.split("&")?.[0]?.split("=")?.[2] ?? "true") === "true";
+                        const taggingData = await Tagging(trackID, seqType, orderAsc, baseHtml);
                         const mergedApiData = taggingData.apiData
                         mergedApiData["pageInfo"] = taggingData.pageInfo;
                         mergedApiData["currentTags"] = taggingData.currentTags;
