@@ -4,6 +4,7 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 function DisplayArtistDropdowns(json, max=-1) {
+    let totalTracks = 0;
     const inTaggingBase = "./tagging/";
     const outputElement = document.querySelector('#artist-list');
     if(json.length == 0) {
@@ -32,6 +33,7 @@ function DisplayArtistDropdowns(json, max=-1) {
                 track.appendChild(trackLink);
                 trackList.appendChild(track);
             });
+            totalTracks += ag.Tracks.length;
             summary.appendChild(artistLink);
             detail.appendChild(summary);
             detail.appendChild(trackList);
@@ -39,6 +41,10 @@ function DisplayArtistDropdowns(json, max=-1) {
             i++;
         }
     });
+
+    const totalTracksP = document.createElement("P");
+    totalTracksP.innerText = totalTracks + " total tracks!";
+    outputElement.appendChild(totalTracksP)
 }
 
 function Landing_AddHandlers() {

@@ -19,6 +19,39 @@
             <summary>Explanation</summary>
             <p>Search for an existing tag or create a new tag using the inputs below. All tag objects on this side of the page can be clicked to be added to the current tack (if not already present). Tags with the &Cross; can be removed from this track using that button, but those tags will remain an "existing tag" until you use the right side of this page to edit or delete them.</p>
             <p>Artist Tags are a special kind of tag that applies at the "Artist-Level", meaning the tag will be added to all tracks by that artist. The same tag can be applied at both the artist-level and the track level, but not on the same track.</p>
+            <h3>Sequence Type In-Depth Explanations:</h3>
+            <ul>
+                <li>Alphabetical by Track
+                    <ul>
+                        <li>Sorts by the <pre style="display: inline">TrackTitle</pre> column, with a tie breaker on <pre style="display: inline">TrackID</pre></li>
+                    </ul>
+                </li>
+                <li>Alphabetical by Artist
+                    <ul>
+                        <li>Sorts by the <pre style="display: inline">Artists</pre> or <pre style="display: inline">AlbumArtists</pre> column depending on presence, then by <pre style="display: inline">TrackID</pre></li>
+                    </ul>
+                </li>
+                <li>Alphabetical by Album
+                    <ul>
+                        <li>Sorts by the <pre style="display: inline">AlbumTitle</pre> column, then by <pre style="display: inline">TrackNumber</pre>, which is guaranteed unique within an Album</li>
+                    </ul>
+                </li>
+                <li>Chronological by Track
+                    <ul>
+                        <li>Sorts by <pre style="display: inline">TrackID</pre></li>
+                    </ul>
+                </li>
+                <li>Chronological by Artist
+                    <ul>
+                        <li>Sorts by the minimum <pre style="display: inline">TrackID</pre> within a given <pre style="display: inline">Artists</pre> or <pre style="display: inline">AlbumArtists</pre> (depending on presence), then by <pre style="display: inline">TrackID</pre> within the artist</li>
+                    </ul>
+                </li>
+                <li>Chronological by Album
+                    <ul>
+                        <li>Sorts by the minimum <pre style="display: inline">TrackID</pre> within a given <pre style="display: inline">AlbumTitle</pre>, then by <pre style="display: inline">TrackNumber</pre>, which is guaranteed unique within an Album</li>
+                    </ul>
+                </li>
+            </ul>
         </details>
         
         <h3><span title="Track Title" id="track-name">Track Name</span> - <span title="Artist" id="track-artist">Artist</span> (<span title="Album" id="track-album">Album</span>)</h3>
