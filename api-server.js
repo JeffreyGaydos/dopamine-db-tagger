@@ -1,4 +1,4 @@
-import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled, ExecuteRawQuery, ValidateEditTag, GetSortOrder, SetSortOrder, GetTrackDataByTagName, GetAdjacentTracks } from './controller.js';
+import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled, ExecuteRawQuery, ValidateEditTag, GetSortOrder, SetSortOrder, GetTrackDataByTagName, GetAdjacentTracks, AllTags } from './controller.js';
 import Install from './install.js';
 import Uninstall from './uninstall.js';
 import { GetConfigJSONCached, SetConfigJSON } from './utilities.js';
@@ -128,6 +128,13 @@ async function RouteAPIEndpoints(url, body) {
                         apiData: mergeResult,
                         modified: true
                     };
+                    break;
+                case "all":
+                    const allResult = await AllTags();
+                    return {
+                        apiData: allResult,
+                        modified: true
+                    }
                     break;
             }
         case "setup":
