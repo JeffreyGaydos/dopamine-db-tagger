@@ -195,22 +195,7 @@ let deleteLoading = false;
 let editLoading = false;
 
 function AddTagToUI(tagName, color, isArtist, trackID, boxSelector, endpoints = undefined, disabled=false) {
-    const tagElement = document.createElement("BUTTON");
-    tagElement.classList.add("tag");
-    tagElement.setAttribute("ev", tagName);
-    tagElement.style.setProperty("--the-color", color);
-    const redThreshold = parseInt("0xAA", 16);
-    const greenThreshold = parseInt("0x55", 16);
-    const blueThreshold = parseInt("0xFF", 16);
-    const redInt = parseInt("0x" + color.substring(1, 3), 16);
-    const greenInt = parseInt("0x" + color.substring(3, 5), 16);
-    const blueInt = parseInt("0x" + color.substring(5), 16);
-    tagElement.style.backgroundColor = "var(--the-color)"; // used for disabled color
-    const textColor = (redInt > redThreshold || blueInt > blueThreshold || greenInt > greenThreshold) ? "black" : "white";
-    tagElement.style.color = textColor;
-    tagElement.style.setProperty("--the-text-color", textColor);
-    if(isArtist) tagElement.classList.add("a");
-    tagElement.innerText = tagName;
+    const tagElement = CreateTag(tagName, color, isArtist);
     if(endpoints?.AddParams) {
         tagElement.addEventListener("click", () => {
             if(!addLoading) {

@@ -55,32 +55,71 @@
             <br/>
             <select id="query-type">
                 <option value="-1" disabled style="display: none;">Select Query type...</option>
-                <option value="raw">Raw SQL</option>
                 <option value="guided">Guided Query</option>
+                <option value="raw">Raw SQL</option>
             </select>
-            <p>Here you can query for a set of tracks using either the tag schema created by this system or the data already created by Dopamine. The SQL connection is readonly, but you could still lock up the database if you are quering it while actively using Dopamine or your browser may crash depending on the complexity of the query.</p>
-            <p>You can find the documentation for SQLite <a href="https://sqlite.org/docs.html">here</a>.</p>
-            <p>The schema of the Dopamine database and the tag schema can be found <a href="./schema.html">here</a>.</p>
             <form id="guided-query">
-                TBD
+                <p>Click the below buttons to add conditions to the "Query" section. Use the syntax hint better understand this pared-down version of SQL.</p>
+                <p>Controls:</p>
+                <ul>
+                    <li>Arrow Keys: Move the cursor within the query</li>
+                    <li>Backspace: Remove the previous query part</li>
+                    <li>Clicking Logic/Tags/Metadata: Adds that query part to the query at the cursor's position</li>
+                </ul>
+                <div class="header">
+                    <h3>Logic:</h3>
+                </div>
+                <div id="logic-container"></div>
+                <br/>
+                <div class="header">
+                    <h3>Tags:</h3>
+                </div>
+                <div id="tag-container"></div>
+                <br/>
+                <div class="header">
+                    <h3>Dopamine Metadata:</h3>
+                </div>
+                <div id="metadata-container"></div>
+                <br/>
+                <div class="header">
+                    <h3>Query:</h3>
+                </div>
+                <p>Tracks will be selected if the following conditions match:</p>
+                <p>Syntax hint: <span id="syntax-hint">...</span></p>
+                <br/>
+                <div id="guided-query-to-run"><div id="cursor-new">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-down" viewBox="0 0 16 16">
+                            <path d="M3.204 5h9.592L8 10.481zm-.753.659 4.796 5.48a1 1 0 0 0 1.506 0l4.796-5.48c.566-.647.106-1.659-.753-1.659H3.204a1 1 0 0 0-.753 1.659"/>
+                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-up" viewBox="0 0 16 16">
+                            <path d="M3.204 11h9.592L8 5.519zm-.753-.659 4.796-5.48a1 1 0 0 1 1.506 0l4.796 5.48c.566.647.106 1.659-.753 1.659H3.204a1 1 0 0 1-.753-1.659"/>
+                        </svg>
+                </div></div>
+                <br/>
+                <button id="guided-execute">Execute Query</button>
+                <button id="view-raw-sql" title="will convert this guided query to the equivallent raw query, replacing the existing inputs in the raw query view">View Raw SQL</button>
             </form>
-            <form id="sql-query">
+            <form id="sql-query" style="display: none">
+                <p>Here you can query for a set of tracks using either the tag schema created by this system or the data already created by Dopamine. The SQL connection is readonly, but you could still lock up the database if you are quering it while actively using Dopamine or your browser may crash depending on the complexity of the query.</p>
+                <p>You can find the documentation for SQLite <a href="https://sqlite.org/docs.html">here</a>.</p>
+                <p>The schema of the Dopamine database and the tag schema can be found <a href="./schema.html">here</a>.</p>
                 <div>
                     <label for="query">Raw SQLite Query:</label>
                     <br/>
                     <textarea id="query"></textarea>
                     <br/><br/>
                     <button id="execute">Execute Query</button>
-                </div>
-                <div>
-                    <label>Errors:</label>
-                    <br/>
-                    <div class="error"></div>
-                </div>
+                </div>                
             </form>
+            <div>
+                <label>Errors:</label>
+                <br/>
+                <div class="error"></div>
+            </div>
+            <br/>
             <br/>
             <div class="header">
-                <h3>Raw Query Results:</h3>
+                <h3>Query Results:</h3>
             </div>
             <div id="query-results"></div>
             <p>Results are limited to the top 20 by default</p>
