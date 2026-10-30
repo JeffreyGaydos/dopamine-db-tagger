@@ -597,7 +597,7 @@ function UpdateSyntaxHint(cursorPosition) {
 
 function Guided_ConvertToSQLite(finalTokens) {
     if(finalTokens) {
-        let finalQuery = `SELECT DISTINCT T.TrackID, T.TrackTitle AS [Track Title], REPLACE(T.Artists, ';', '') AS [Artist Name], T.AlbumTitle AS [Album Name], T.Duration AS [Duration] FROM Track T`;
+        let finalQuery = `SELECT DISTINCT T.TrackID, T.TrackTitle AS [Track Title], REPLACE(T.Artists, ';', '') AS [Artist Name], T.AlbumTitle AS [Album Name], T.Duration AS [Duration], STRING_AGG(TAG_UNFILTERED.TagName, ', ') AS [All Tags] FROM Track T JOIN TaggedAll TAG_UNFILTERED ON TAG_UNFILTERED.TrackID = T.TrackID`;
         const needTagAssignments = finalTokens.filter(ft => ft.type == "q-tag").length > 0;
         if(needTagAssignments) {
             finalQuery += `
@@ -688,6 +688,7 @@ JOIN TaggedAll TAG
         });
         finalQuery += `
 WHERE ${whereClauses.join(" ")}
+GROUP BY T.TrackID
         `;
         return finalQuery;
     }
