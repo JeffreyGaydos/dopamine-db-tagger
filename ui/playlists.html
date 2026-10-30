@@ -49,7 +49,8 @@
         </div>
         <div id="right-pane">
             <div class="header">
-                <h3>Query Database Raw:</h3>
+                <h3 class="raw" style="display: none">Raw Query:</h3>
+                <h3 class="guided">Guided Query:</h3>
             </div>
             <label for="query-type">Query Type:</label>
             <br/>
@@ -59,7 +60,7 @@
                 <option value="raw">Raw SQL</option>
             </select>
             <form id="guided-query">
-                <p>Click the below buttons to add conditions to the "Query" section. Use the syntax hint better understand this pared-down version of SQL.</p>
+                <p>Click the below buttons to add conditions to the "Query" section. Use the syntax hint to better understand this pared-down version of SQL.</p>
                 <p>Controls:</p>
                 <ul>
                     <li>Arrow Keys: Move the cursor within the query</li>

@@ -24,11 +24,15 @@ window.addEventListener("DOMContentLoaded", () => {
             case "guided":
                 document.querySelector("#guided-query").style.display = "block";
                 document.querySelector("#sql-query").style.display = "none";
+                document.querySelector("#right-pane .header .raw").style.display = "none";
+                document.querySelector("#right-pane .header .guided").style.display = "block";
                 break;
             case "raw":
             default:
                 document.querySelector("#guided-query").style.display = "none";
                 document.querySelector("#sql-query").style.display = "block";
+                document.querySelector("#right-pane .header .raw").style.display = "block";
+                document.querySelector("#right-pane .header .guided").style.display = "none";
                 break;    
         }
     });
@@ -80,8 +84,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // Get default syntax hint
     UpdateSyntaxHint(undefined, undefined);
-
-    
 });
 
 let cursorBlink = false;
