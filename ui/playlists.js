@@ -444,6 +444,29 @@ function AddGuidedQueryButtons() {
         });
         document.querySelector("#metadata-container").appendChild(newButton);
     });
+
+    const leftButton = CreateTag("<", "#fff", false);
+    leftButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        MoveCursorLeft();
+    });
+
+    const rightButton = CreateTag(">", "#fff", false);
+    rightButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        MoveCursorRight();
+    });
+
+    const backspaceButton = CreateTag("Backspace", "#fff", false);
+    backspaceButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        BackspaceToken();
+    });
+
+    const controlButtonsGroup = document.querySelector("#guided-control-buttons-container");
+    controlButtonsGroup.appendChild(leftButton);
+    controlButtonsGroup.appendChild(rightButton);
+    controlButtonsGroup.appendChild(backspaceButton);
 }
 
 // NOTE: color parameter is only used by tags
