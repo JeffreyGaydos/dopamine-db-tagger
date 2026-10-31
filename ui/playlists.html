@@ -17,9 +17,6 @@
             <p>This playlist generator works in tandem with the query you input on the right side of this page. Given that query, it will look for the TrackID column that you've queried for, and gather the necessary information (filename, folder, etc.) to create a playlist for a specific platform.</p>
             <p>The generator will create a playlist using everything after the first FROM in your query, so be careful not to include any logic in the SELECT columns themselves.</p>
             <form>
-                <label for="trackid-alias">Fully Qualified TrackID Alias:</label>
-                <input type="text" id="trackid-alias" value="TrackID"></input>
-                <br/><br/>
                 <label for="playlist-type">Playlist Type:</label>
                 <select id="playlist-type">
                     <option value="-1" disabled style="display: none;">Select an Playlist file type...</option>
@@ -49,38 +46,98 @@
         </div>
         <div id="right-pane">
             <div class="header">
-                <h3>Query Database Raw:</h3>
+                <h3 class="raw" style="display: none">Raw Query:</h3>
+                <h3 class="guided">Guided Query:</h3>
             </div>
             <label for="query-type">Query Type:</label>
             <br/>
             <select id="query-type">
                 <option value="-1" disabled style="display: none;">Select Query type...</option>
-                <option value="raw">Raw SQL</option>
                 <option value="guided">Guided Query</option>
+                <option value="raw">Raw SQL</option>
             </select>
-            <p>Here you can query for a set of tracks using either the tag schema created by this system or the data already created by Dopamine. The SQL connection is readonly, but you could still lock up the database if you are quering it while actively using Dopamine or your browser may crash depending on the complexity of the query.</p>
-            <p>You can find the documentation for SQLite <a href="https://sqlite.org/docs.html">here</a>.</p>
-            <p>The schema of the Dopamine database and the tag schema can be found <a href="./schema.html">here</a>.</p>
             <form id="guided-query">
-                TBD
+                <p>Click the below buttons to add conditions to the "Query" section. Use the syntax hint to better understand this pared-down version of SQL.</p>
+                <p>Controls:</p>
+                <ul>
+                    <li>Arrow Keys: Move the cursor within the query</li>
+                    <li>Backspace: Remove the previous query part</li>
+                    <li>Clicking Logic/Tags/Metadata: Adds that query part to the query at the cursor's position</li>
+                </ul>
+                <div class="header">
+                    <h3>Logic:</h3>
+                </div>
+                <div id="logic-container"></div>
+                <br/>
+                <div class="header">
+                    <h3>Tags:</h3>
+                </div>
+                <div id="tag-container"></div>
+                <br/>
+                <div class="header">
+                    <h3>Dopamine Metadata:</h3>
+                </div>
+                <div id="metadata-container"></div>
+                <br/>
+                <div class="header">
+                    <h3>Query:</h3>
+                </div>
+                <p>Tracks will be selected if the following conditions match:</p>
+                <p>Syntax hint: <span id="syntax-hint">...</span></p>
+                <br/>
+                <div id="guided-query-to-run"><div id="cursor-new">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-down" viewBox="0 0 16 16">
+                            <path d="M3.204 5h9.592L8 10.481zm-.753.659 4.796 5.48a1 1 0 0 0 1.506 0l4.796-5.48c.566-.647.106-1.659-.753-1.659H3.204a1 1 0 0 0-.753 1.659"/>
+                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-up" viewBox="0 0 16 16">
+                            <path d="M3.204 11h9.592L8 5.519zm-.753-.659 4.796-5.48a1 1 0 0 1 1.506 0l4.796 5.48c.566.647.106 1.659-.753 1.659H3.204a1 1 0 0 1-.753-1.659"/>
+                        </svg>
+                </div></div>
+                <br/><br/>
+                <div id="guided-control-buttons-container">
+                </div>
+                <br/>
+                <button id="guided-execute">Execute Query</button>
+                <button id="view-raw-sql" title="will convert this guided query to the equivallent raw query, replacing the existing inputs in the raw query view">View Raw SQL</button>
             </form>
-            <form id="sql-query">
+            <form id="sql-query" style="display: none">
+                <p>Here you can query for a set of tracks using either the tag schema created by this system or the data already created by Dopamine. The SQL connection is readonly, but you could still lock up the database if you are quering it while actively using Dopamine or your browser may crash depending on the complexity of the query.</p>
+                <p>You can find the documentation for SQLite <a href="https://sqlite.org/docs.html">here</a>.</p>
+                <p>The schema of the Dopamine database and the tag schema can be found <a href="./schema.html">here</a>.</p>
+                <details>
+                    <summary>A note on date values in the Dopamine database</summary>
+                    <div style="padding-left: 20px;">
+                        <p>Dopamine stores dates as the C# tick value. SQLite does not have a built-in way to easily convert these values to human readable dates. As such, a custom "macro" has been included that can convert to and from the C# tick format and a readable date time.</p>
+                        <p>Syntax:</p>
+                        <ul>
+                            <li><pre>@d('2026-12-31 14:30:02')</pre> will convert to the C# tick equivallent value that Dopamine uses (useful for sorting/filtering): <pre style="display: inline;">639343242020000000</pre></li>
+                            <li><pre>@d(636586976464610048)</pre> will convert to a human readable string. Note that this string is <em>NOT</em> sortable: <pre style="display: inline;">2018-04-07 11:34:06</pre></li>
+                        </ul>
+                        <p>The exact code that runs these macros is as follows:</p>
+                        <ul>
+                            <li>Convert Dopamine C# Ticks to Human Readable Date: <pre style="display: inline;">DATETIME(((@DopamineDateValue - 621355968000000000) / 10000000), 'unixepoch')</pre></li>
+                            <li>Convert Human Readable Date to Dopamine C# Ticks: <pre style="display: inline;">CAST(STRFTIME('%s', @HumanReadableDateString) AS INT) * 10000000 + 621355968000000000</pre></li>
+                        </ul>
+                    </div>
+                </details>
+                <br/>
                 <div>
                     <label for="query">Raw SQLite Query:</label>
                     <br/>
                     <textarea id="query"></textarea>
                     <br/><br/>
                     <button id="execute">Execute Query</button>
-                </div>
-                <div>
-                    <label>Errors:</label>
-                    <br/>
-                    <div class="error"></div>
-                </div>
+                </div>                
             </form>
+            <div>
+                <label>Errors:</label>
+                <br/>
+                <div class="error"></div>
+            </div>
+            <br/>
             <br/>
             <div class="header">
-                <h3>Raw Query Results:</h3>
+                <h3>Query Results:</h3>
             </div>
             <div id="query-results"></div>
             <p>Results are limited to the top 20 by default</p>

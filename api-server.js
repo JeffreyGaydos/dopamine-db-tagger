@@ -1,4 +1,4 @@
-import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled, ExecuteRawQuery, ValidateEditTag, GetSortOrder, SetSortOrder, GetTrackDataByTagName, GetAdjacentTracks } from './controller.js';
+import { AddTag, EditTag, GetAvailableTagSearchRestults, GetTrackSearchResults, RefreshTagLists, RemoveTagFromTrack, DeleteTagEverywhere, GetDeletionCounts, IsInstalled, ExecuteRawQuery, ValidateEditTag, GetSortOrder, SetSortOrder, GetTrackDataByTagName, GetAdjacentTracks, AllTags } from './controller.js';
 import Install from './install.js';
 import Uninstall from './uninstall.js';
 import { GetConfigJSONCached, SetConfigJSON } from './utilities.js';
@@ -129,6 +129,13 @@ async function RouteAPIEndpoints(url, body) {
                         modified: true
                     };
                     break;
+                case "all":
+                    const allResult = await AllTags();
+                    return {
+                        apiData: allResult,
+                        modified: true
+                    }
+                    break;
             }
         case "setup":
             switch(urlBits[2]) {
@@ -197,14 +204,27 @@ async function RouteAPIEndpoints(url, body) {
                         modified: true
                     };
                 } catch (e) {
-                    return {
-                        apiData: {
-                            error: e,
-                            results: [],
-                            limited: undefined
-                        },
-                        modified: true
-                    };
+                    try {
+                        const installedResult = await IsInstalled();
+                        return {
+                            apiData: {
+                                error: installedResult.installed ? e : "It appears the custom schema is not installed or the database configuration is incorrect. See the <a href='/ui/setup.html'>Setup Page</a> to correct this.",
+                                results: [],
+                                limited: undefined
+                            },
+                            modified: true
+                        }
+                    }
+                    catch(e2) {
+                        return {
+                            apiData: {
+                                error: e2,
+                                results: [],
+                                limited: undefined
+                            },
+                            modified: true
+                        };
+                    }
                 }
                 break;   
             }

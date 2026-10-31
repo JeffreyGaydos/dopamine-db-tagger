@@ -156,6 +156,10 @@ export async function RefreshTagLists(trackID, allTagsRefresh = 0) {
     };
 }
 
+export async function AllTags() {
+    return await GetAllTags();
+}
+
 export async function MergeTwoTags(tagName, newTagName) {
     await MergeTags(tagName, newTagName);
 }

@@ -8,10 +8,6 @@
     height: 350px;
 }
 
-#guided-query {
-    display: none;
-}
-
 form#sql-query {
     div {
         display: inline-block;
@@ -46,4 +42,57 @@ table {
 
 #query-results {
     overflow: auto;
+}
+
+#tag-container {
+    overflow: scroll;
+    max-height: 300px;
+}
+
+#cursor {
+    padding: 10px;
+    margin-top: -23px;
+    position: relative;
+    top: 20px;
+    left: -18px;
+}
+
+#cursor-new {
+    display: inline-block;
+    width: 0;
+    transition: all linear 0.25s;
+
+    svg {
+        transition: all linear 0.25s;
+        position: relative;
+        margin-left: -8px;
+        margin-top: -16px;
+    }
+
+    svg.in:first-child {
+        top: -18px;
+    }
+
+    svg.in:last-child {
+        bottom: -25px;
+    }
+
+    svg.out:first-child {
+        top: -21px;
+    }
+
+    svg.out:last-child {
+        bottom: -28px;
+    }
+}
+
+#guided-query-to-run {
+    .tag:hover {
+        transform: scale(1.0) !important;
+        cursor: auto;
+    }
+}
+
+pre {
+    display: inline;
 }

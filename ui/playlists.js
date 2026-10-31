@@ -7,7 +7,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     document.querySelector("#full-results").addEventListener("click", (e) => {
         e.preventDefault();
-        const query = document.querySelector("#query").value;
+        const query = document.querySelector("#query-type").value != "guided" ? document.querySelector("#query").value : Guided_ConvertToSQLite(Guided_ParseQuery().finalTokens);
         (async () => await HandleExecuteRawQuery(query, 1000))();
     });
 
@@ -15,11 +15,185 @@ window.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
         (async () => await HandleGeneratePlaylist())();
     });
+
+    AddGuidedQueryButtons();
+
+    document.querySelector("#query-type").addEventListener("change", (e) => {
+        AddToQueryErrorBox(undefined);
+        switch(e.target.value) {
+            case "guided":
+                document.querySelector("#guided-query").style.display = "block";
+                document.querySelector("#sql-query").style.display = "none";
+                document.querySelector("#right-pane .header .raw").style.display = "none";
+                document.querySelector("#right-pane .header .guided").style.display = "block";
+                break;
+            case "raw":
+            default:
+                document.querySelector("#guided-query").style.display = "none";
+                document.querySelector("#sql-query").style.display = "block";
+                document.querySelector("#right-pane .header .raw").style.display = "block";
+                document.querySelector("#right-pane .header .guided").style.display = "none";
+                break;    
+        }
+    });
+
+    // Prevents the cursor from moving if you are using the arrow keys to change the dropdown value
+    document.querySelector("#query-type").addEventListener("keydown", (e) => {
+        e.stopPropagation();
+    });
+
+    setInterval(() => {
+        if(cursorBlink) {
+            document.querySelectorAll("#cursor-new svg").forEach(c => {
+                c.classList.remove("out");
+                c.classList.add("in");
+            });
+        } else {
+            document.querySelectorAll("#cursor-new svg").forEach(c => {
+                c.classList.remove("in");
+                c.classList.add("out");
+            });
+        }
+        cursorBlink = !cursorBlink;
+    }, 500);
+
+    document.addEventListener("keydown", (e) => {
+        switch(e.key) {
+            case "ArrowLeft":
+                MoveCursorLeft();
+                break;
+            case "ArrowRight":
+                MoveCursorRight();
+                break;
+            case "Backspace":
+                BackspaceToken();
+                break;
+        }
+    });
+
+    document.querySelector("#view-raw-sql").addEventListener("click", (e) => {
+        e.preventDefault();
+        const guidedSql = Guided_ConvertToSQLite(Guided_ParseQuery().finalTokens);
+        if(guidedSql !== undefined) { //undefined means we failed to generate anything
+            document.querySelector("#query").value = guidedSql;
+            document.querySelector("#query-type").value = "raw";
+            document.querySelector("#query-type").dispatchEvent(new Event("change"));
+        }
+    });
+
+    document.querySelector("#guided-execute").addEventListener("click", (e) => {
+        e.preventDefault();
+        const guidedSql = Guided_ConvertToSQLite(Guided_ParseQuery().finalTokens);
+        HandleExecuteRawQuery(guidedSql, 20).then(r => {
+            console.log(r)
+        });
+    });
+
+    // Get default syntax hint
+    UpdateSyntaxHint(undefined, undefined);
 });
 
+let cursorBlink = false;
+
+function MoveCursorLeft() {
+    if(document.querySelector("#query-type").value != "guided" || ["INPUT", "TEXTAREA"].includes(document.activeElement.tagName.toUpperCase())) return;
+    let queryBox = document.querySelector("#guided-query-to-run");
+    let cursorPosition = -1;
+    queryBox.childNodes.forEach((c, i) => {
+        if(c.id == "cursor-new") {
+            cursorPosition = i;
+        }
+    });
+    if(cursorPosition > 0) {
+        //We can do this
+        let insertBefore = document.querySelectorAll(`#guided-query-to-run > *:not(#cursor-new)`)[cursorPosition - 1];
+        let cursor = document.querySelector("#guided-query-to-run #cursor-new");
+        document.querySelector("#guided-query-to-run #cursor-new").remove();
+        queryBox.insertBefore(cursor, insertBefore);
+        UpdateSyntaxHint(cursorPosition - 1);
+    }
+}
+
+function MoveCursorRight() {
+    if(document.querySelector("#query-type").value != "guided" || ["INPUT", "TEXTAREA"].includes(document.activeElement.tagName.toUpperCase())) return;
+    let queryBox = document.querySelector("#guided-query-to-run");
+    let cursorPosition = -1;
+    queryBox.childNodes.forEach((c, i) => {
+        if(c.id == "cursor-new") {
+            cursorPosition = i;
+        }
+    });
+    if(cursorPosition + 1 < queryBox.childElementCount) {
+        //We can do this
+        let insertAfter = document.querySelectorAll(`#guided-query-to-run > *:not(#cursor-new)`)[cursorPosition];
+        let cursor = document.querySelector("#guided-query-to-run #cursor-new");
+        document.querySelector("#guided-query-to-run #cursor-new").remove();
+        insertAfter.insertAdjacentElement("afterend", cursor);
+        UpdateSyntaxHint(cursorPosition + 1);
+    }
+}
+
+function BackspaceToken() {
+    if(document.querySelector("#query-type").value != "guided" || ["INPUT", "TEXTAREA"].includes(document.activeElement.tagName.toUpperCase())) return;
+    let queryBox = document.querySelector("#guided-query-to-run");
+    let cursorPosition = -1;
+    queryBox.childNodes.forEach((c, i) => {
+        if(c.id == "cursor-new") {
+            cursorPosition = i;
+        }
+    });
+    if(cursorPosition > 0) { //TODO here and above we need to prevent movement on input of a form field
+        let toDelete = document.querySelectorAll(`#guided-query-to-run > *`)[cursorPosition - 1];
+        toDelete.remove();
+        Guided_HandleErrors(Guided_ParseQuery());
+        UpdateSyntaxHint(cursorPosition - 1);
+    }
+}
+
+function HandleMacros(queryString) {
+    const dateToTickRegex = new RegExp(/(?<=[\s\b])@d\('[^)]+'\)/gm);
+    const tickToDateRegex = new RegExp(/(?<=[\s\b])@d\([^)']+\)/gm);
+    const valueRegexOne = new RegExp(/(?<=@d\()[^)]+(?=\))/gm);
+    const valueRegexTwo = new RegExp(/(?<=@d\()[^)]+(?=\))/gm);
+
+    const needsToTickConversion = [];
+    const needsToDateTimeConversion = [];
+
+    let replacedQueryString = queryString;
+
+    let result = null;
+    do {
+        result = dateToTickRegex.exec(queryString);
+        if(result !== null) {
+            needsToTickConversion.push(result[0]);
+        }
+    } while(result !== null);
+    
+    result = null;
+    do {
+        result = tickToDateRegex.exec(queryString);
+        if(result) {
+            needsToDateTimeConversion.push(result[0]);
+        }
+    } while(result);
+
+    needsToTickConversion.forEach(q => {
+        const val = valueRegexOne.exec(q);
+        if(val !== null)
+            replacedQueryString = replacedQueryString.replaceAll(q, `(CAST(STRFTIME('%s', ${val[0]}) AS INT) * 10000000 + 621355968000000000)`);
+    });
+    needsToDateTimeConversion.forEach(q => {
+        const val = valueRegexTwo.exec(q);
+        if(val !== null)
+            replacedQueryString = replacedQueryString.replaceAll(q, `DATETIME(((${val[0]} - 621355968000000000) / 10000000), 'unixepoch')`);
+    });
+    return replacedQueryString;
+}
+
 async function HandleExecuteRawQuery(query, limit) {
+    const macroedQuery = HandleMacros(query);
     return new Promise((resolve) => {
-        fetch(`http://localhost:8080/api/query/raw/${encodeURIComponent(query)}/${limit}`).then((f) => {
+        fetch(`http://localhost:8080/api/query/raw/${encodeURIComponent(macroedQuery)}/${limit}`).then((f) => {
             f.json().then(r => {
                 document.querySelector("#query-results").innerHTML = "";
                 if(r.error) {
@@ -69,7 +243,8 @@ async function HandleGeneratePlaylist() {
         alert("Playlist name is missing");
         return;
     }
-    const rawquery = document.querySelector("#query").value;
+
+    const rawquery = document.querySelector("#query-type").value != "guided" ? document.querySelector("#query").value : Guided_ConvertToSQLite(Guided_ParseQuery().finalTokens);
     const oneResult = await HandleExecuteRawQuery(rawquery, 1); //Can I get 1?
     if(document.querySelector("#right-pane .error:has(*)")) {
         alert("Current query has errors that need corrected");
@@ -79,21 +254,31 @@ async function HandleGeneratePlaylist() {
         alert("query returned no results!");
         return;
     }
-    const query = document.querySelector("#query").value;
+    
+    const query = document.querySelector("#query-type").value != "guided" ? document.querySelector("#query").value : Guided_ConvertToSQLite(Guided_ParseQuery().finalTokens);
     const splitQuery = query.split(/\bFROM\b/);
-    console.log(splitQuery);
     if(splitQuery.length === 1) {
         alert("Could not find FROM clause in query. It may be empty.");
         return;
     }
     const queryConditions = query.replace(splitQuery[0], "");
-    const alias = document.querySelector("#trackid-alias").value;
+    const aliasRegex = new RegExp(/[^\s]*\bTrackID\b/);
+    const aliasResult = aliasRegex.exec(rawquery);
+    if(!aliasResult || aliasResult.length < 1) {
+        alert("Could not find TrackID in your query. It must match this Regex: /[^\s]*\bTrackID\b/")
+    }
+    const alias = aliasResult[0];
+
     const finalQuery = `
         SELECT DDBT_TRACK.TrackID, DDBT_TRACK.Path
         FROM (SELECT ${alias} ${queryConditions}) ORIG
         JOIN Track DDBT_TRACK
             ON DDBT_TRACK.TrackID = ORIG.TrackID`;
     const allResults = await HandleExecuteRawQuery(finalQuery, true);
+    if(allResults.length == 0) {
+        alert("The SQL wrapper around your query resulted in a playlist with 0 results. Probably a bug, see the developer console for the \"real\" query we ran.");
+        console.log({finalQuery});
+    }
     await HandleExecuteRawQuery(rawquery, 20);
     const replaceFrom = document.querySelector("#replace-from").value;
     const replaceTo = document.querySelector("#replace-to").value;
@@ -138,15 +323,12 @@ async function GenerateM3UPlaylist(allResults, relativeToBasePath, replaceThis, 
                 const finalRows = ["#EXTM3U"];
                 allResults.forEach((a, i) => {
                     let path = a.Path;
-                    console.log(path);
                     if(replaceThis) {
                         path = path.replace(replaceReg, withThis ?? "");
                     }
-                    console.log(path);
                     if(relativeToBasePath) {
                         path = path.replace(relativeReg, "");
                     }
-                    console.log(path);
                     finalRows.push(path);
                 });
                 output.value = finalRows.slice(0, 20).join("\n");
@@ -213,4 +395,443 @@ function GenerateResultRow(item) {
     });
     tbody.appendChild(row);
     document.querySelector("#query-results table").appendChild(tbody);
+}
+
+function GetLogicColorByKey(key) {
+    switch(key) {
+        default:
+        case "AND":
+        case "OR":
+            return "#0C0";
+        case "CONTAINS":
+        case "=":
+        case ">":
+        case "<":
+        case ">=":
+        case "<=":
+        case "!=":
+            return "#000";
+        case "(":
+        case ")":
+            return "#888";
+    }
+}
+
+function GetMetadataColorByKey(key) {
+    switch(key) {
+        case "Raw Text":
+        case "DateTime":
+            return "#FFF";
+        default:
+            return "#A00";
+    }
+}
+
+function GetMetadataEnableHTMLByKey(key) {
+    return key == "Raw Text" || key == "DateTime";
+}
+
+function GetMetadataKeyModificationByKey(key) {
+    switch(key) {
+        case "Raw Text":
+            return "<input type=\"text\" placeholder=\"raw text\" />";
+        case "DateTime":
+            return "<input type=\"text\" placeholder=\"YYYY-MM-DD hh:mm:ss\" />";
+        default:
+            return key;
+    }
+}
+
+function GetMetadataClassesByKey(key) {
+    let additionalClass = "q-metadata";
+    switch(key) {
+        case "Raw Text":
+            additionalClass += " text";
+            break;
+        case "DateTime":
+            additionalClass += " datetime";
+            break;
+    }
+    return additionalClass;
+}
+
+function AddGuidedQueryButtons() {
+    const logicButtons = [
+        "AND",
+        "OR",
+        "CONTAINS",
+        "=",
+        ">",
+        "<",
+        ">=",
+        "<=",
+        "!=",
+        "(",
+        ")",
+        "INCLUDE TAG",
+        "EXCLUDE TAG"
+    ];
+    logicButtons.forEach(b => {
+        const newButton = CreateTag(b, GetLogicColorByKey(b), false)
+        newButton.addEventListener("click", (e) => {
+            e.preventDefault();
+            Guided_AddToQuery("logic", b);
+            Guided_HandleErrors(Guided_ParseQuery());
+        });
+        document.querySelector("#logic-container").appendChild(newButton);
+    });
+
+    fetch(`http://localhost:8080/api/tag/all`).then((f) => {
+        f.json().then(r => {
+            r.forEach(t => {
+                const newButton = CreateTag(t.TagName, t.Color, false);
+                newButton.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    Guided_AddToQuery("tag", t.TagName, t.Color);
+                    Guided_HandleErrors(Guided_ParseQuery());
+                });
+                document.querySelector("#tag-container").appendChild(newButton);
+            });
+        });
+    });
+
+    const metadataButtons = [
+        "Duration",
+        "Track Title",
+        "Artist Name",
+        "Album Name",
+        "File Path",
+        "Date Acquired",
+        "Raw Text",
+        "DateTime"
+    ];
+    metadataButtons.forEach(b => {
+        const newButton = CreateTag(b, GetMetadataColorByKey(b), false);
+        newButton.addEventListener("click", (e) => {
+            e.preventDefault();
+            Guided_AddToQuery("metadata", b, GetMetadataColorByKey(b));
+            Guided_HandleErrors(Guided_ParseQuery());
+        });
+        document.querySelector("#metadata-container").appendChild(newButton);
+    });
+
+    const leftButton = CreateTag("<", "#fff", false);
+    leftButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        MoveCursorLeft();
+    });
+
+    const rightButton = CreateTag(">", "#fff", false);
+    rightButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        MoveCursorRight();
+    });
+
+    const backspaceButton = CreateTag("Backspace", "#fff", false);
+    backspaceButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        BackspaceToken();
+    });
+
+    const controlButtonsGroup = document.querySelector("#guided-control-buttons-container");
+    controlButtonsGroup.appendChild(leftButton);
+    controlButtonsGroup.appendChild(rightButton);
+    controlButtonsGroup.appendChild(backspaceButton);
+}
+
+// NOTE: color parameter is only used by tags
+function Guided_AddToQuery(type, key, color=undefined) {
+    const cursor = document.querySelector("#guided-query-to-run #cursor-new");
+    let queryPart = undefined;
+    switch(type) {
+        case "logic":
+            queryPart = CreateTag(key, GetLogicColorByKey(key), false, false, "q-logic");
+            break;
+        case "tag":
+            queryPart = CreateTag(key, color, false, false, "q-tag");
+            break;
+        case "metadata":
+            queryPart = CreateTag(GetMetadataKeyModificationByKey(key), GetMetadataColorByKey(key), false, GetMetadataEnableHTMLByKey(key), GetMetadataClassesByKey(key));
+            break;
+        default:
+            console.error("Not supposed to get here. You're calling this method incorrectly");
+    }
+    queryPart.addEventListener("click", (e) => e.preventDefault());
+    cursor.insertAdjacentElement("afterend", queryPart);
+    MoveCursorRight();
+}
+
+function Guided_HandleErrors(errorObj) {
+    //Reset previous compilation errors:
+    document.querySelectorAll("#guided-query-to-run > *:not(#cursor-new)").forEach(t => {
+        t.style.borderWidth = "2px";
+        t.style.borderStyle = "outset";
+        t.style.borderColor = "buttonborder";
+        t.style.borderImage = "none";
+    });
+    AddToQueryErrorBox(undefined);
+
+    if(errorObj.error?.length ?? 0 > 0) {
+        AddToQueryErrorBox(errorObj.error);
+        document.querySelectorAll("#guided-query-to-run > *:not(#cursor-new)")[errorObj.token].style.border = "5px dashed red";
+    }    
+}
+
+function Guided_ParseQuery(onlyLookAtFirstNumTokens = -1) {
+    const queryBox = document.querySelector("#guided-query-to-run");   
+
+    let finalQuery = [];
+    queryBox.childNodes.forEach(c => {
+        if(c.id != "cursor-new") {
+            let val = c.getAttribute("ev");
+            if(c.className.includes("q-metadata") && c.getAttribute("ev").includes("<input")) {
+                console.log(c.className.includes("q-metadata"));
+                if(c.className.includes("text")) {
+                    val = c.querySelector("input").value; //Use the input's value
+                    console.log(val);
+                } else if(c.className.includes("datetime")) {
+                    val = `@d('${c.querySelector("input").value}')`; //Warp the input's value in the macro
+                    console.log(val);
+                }
+            }
+            finalQuery.push({
+                type: c.className.replace("tag ", "").split(" ")[0], //Ignore the tag class, then only get the first class (for typed user inputs)
+                value: val
+            });
+        }
+    });
+
+    finalQuery = onlyLookAtFirstNumTokens != -1 ? finalQuery.slice(0, onlyLookAtFirstNumTokens) : finalQuery;
+    
+    let openParenthesisCount = 0;
+    let expectantComparison = false;
+    let allowedTokens = GetAllowedTokens(null, openParenthesisCount, expectantComparison);
+    let errorMessage = "";
+    let erroredToken = -1;
+    for(var i = 0; i < finalQuery.length; i++) {
+        // console.log({
+        //     expectantComparison,
+        //     openParenthesisCount,
+        //     tokenIndex: i,
+        //     allowedTokens
+        // });
+        const token = finalQuery[i];
+        if(allowedTokens.filter(at => at.type == token.type && (at.value ?? token.value) == token.value).length == 1) {
+            //This token is allowed, determine parns, comparisons, next allowed tokens, then move to next
+            openParenthesisCount += token.value == "(" ? 1 : 0;
+            openParenthesisCount -= token.value == ")" ? 1 : 0;
+            expectantComparison = !expectantComparison ? ["CONTAINS", "=", "!=", ">=", "<=", ">", "<"].includes(token.value) : token.type == "q-metadata";
+            allowedTokens = GetAllowedTokens(token, openParenthesisCount, expectantComparison);
+        } else {
+            errorMessage = `token is not allowed at location: { "${token.type}", "${token.value}" }`;
+            erroredToken = i;
+            allowedTokens = null; //explicitly turn this off since we can't know what's right after a syntax error
+            finalQuery = null; //explicitly turn this off since we can't know what's right after a syntax error
+            break;
+        }
+    }
+
+    return { error: errorMessage, token: erroredToken, nextAllowedTokens: allowedTokens, finalTokens: finalQuery };
+}
+
+function GetAllowedTokens(currentToken, numOpenParenthesis, hasExpectantComparison) {
+    if(currentToken == null) { //signifies when the query is empty
+        return [
+            {type: "q-logic", value: "INCLUDE TAG"},
+            {type: "q-logic", value: "EXCLUDE TAG"},
+            {type: "q-logic", value: "("},
+            {type: "q-metadata", value: null} //null denotes all values from the metadata type are valid
+        ];
+    } else if(currentToken.type == "q-logic" && ["INCLUDE TAG", "EXCLUDE TAG"].includes(currentToken.value)) {
+        return [{type: "q-tag", value: null}]
+    } else if(currentToken.type == "q-logic" && currentToken.value == "(") {
+        return [
+            {type: "q-logic", value: "INCLUDE TAG"},
+            {type: "q-logic", value: "EXCLUDE TAG"},
+            {type: "q-logic", value: "("},
+            {type: "q-metadata", value: null} //null denotes all values from the metadata type are valid
+        ];
+    } else if(currentToken.type == "q-metadata" && !hasExpectantComparison) {
+        return [
+            {type: "q-logic", value: "CONTAINS"},
+            {type: "q-logic", value: "="},
+            {type: "q-logic", value: "!="},
+            {type: "q-logic", value: ">="},
+            {type: "q-logic", value: "<="},
+            {type: "q-logic", value: ">"},
+            {type: "q-logic", value: "<"},
+        ];
+    }
+    //Ok we've gotten through the first line of the flow chart
+    else if(currentToken.type == "q-tag" || (currentToken.type == "q-metadata" && hasExpectantComparison)) {
+        const alwaysAbleToComeAfterTag = [
+            {type: "q-logic", value: "AND"},
+            {type: "q-logic", value: "OR"}
+        ];
+        if(numOpenParenthesis > 0) {
+            return [...alwaysAbleToComeAfterTag, {type: "q-logic", value: ")"}];
+        }
+        return alwaysAbleToComeAfterTag;
+    } else if(currentToken.type == "q-logic" && ["CONTAINS", "=", "!=", ">=", "<=", ">", "<"].includes(currentToken.value)) {
+        return [
+            {type: "q-metadata", value: null}
+        ];
+    } else if(currentToken.type == "q-logic" && currentToken.value == ")") {
+        const alwaysAbleToComeAfterParen = [
+            {type: "q-logic", value: "AND"},
+            {type: "q-logic", value: "OR"}
+        ];
+        if(numOpenParenthesis > 0) {
+            return [...alwaysAbleToComeAfterParen, {type: "q-logic", value: ")"}];
+        }
+        return alwaysAbleToComeAfterParen;
+    } else if(currentToken.type == "q-logic" && ["AND", "OR"].includes(currentToken.value)) {
+        return GetAllowedTokens(null, numOpenParenthesis, false);
+    }
+    return []; //probably shouldn't get here
+}
+
+function UpdateSyntaxHint(cursorPosition) {
+    const syntaxHint = document.querySelector("#syntax-hint");
+
+    const typeNameToUIName = {
+        "q-tag": "Any Tag",
+        "q-metadata": "Any Dopamine Metadata",
+        "q-logic": "Any Logic Operation" //unused
+    };
+    
+    const resultsObject = Guided_ParseQuery(cursorPosition);
+    if(resultsObject.error?.length ?? 0 > 0) return;
+    syntaxHint.innerHTML = resultsObject.nextAllowedTokens.length == 0
+        ? "..."
+        : resultsObject.nextAllowedTokens.length == 1
+            ? "<pre>" + (resultsObject.nextAllowedTokens[0].value ?? typeNameToUIName[resultsObject.nextAllowedTokens[0].type]) + "</pre> can come next"
+            : "<pre>" + resultsObject.nextAllowedTokens.map(at => at.value ?? at.type).slice(0, -1).join("</pre>, <pre>") + "</pre> or <pre>" + (resultsObject.nextAllowedTokens[resultsObject.nextAllowedTokens.length - 1].value ?? typeNameToUIName[resultsObject.nextAllowedTokens[resultsObject.nextAllowedTokens.length - 1].type]) + "</pre> can come next";
+}
+
+function Guided_ConvertToSQLite(finalTokens) {
+    if(finalTokens) {
+        let finalQuery =
+`SELECT DISTINCT
+    T.TrackID,
+    T.TrackTitle AS [Track Title],
+    REPLACE(T.Artists, ';', '') AS [Artist Name],
+    T.AlbumTitle AS [Album Name],
+    T.Duration AS [Duration],
+    T.Path AS [File Path],
+    @d(T.DateFileCreated) AS [Date Acquired],
+    STRING_AGG(TAG_UNFILTERED.TagName, ', ') AS [All Tags]
+FROM Track T
+LEFT JOIN TaggedAll TAG_UNFILTERED
+    ON TAG_UNFILTERED.TrackID = T.TrackID`;
+        const hasIncludeTag = finalTokens.filter(ft => ft.type == "q-logic" && ft.value == "INCLUDE TAG").length > 0;
+        if(hasIncludeTag) {
+            finalQuery += `
+JOIN TaggedAll TAG_INCLUDES
+    ON TAG_INCLUDES.TrackID = T.TrackID`;
+        }
+        let whereClauses = [];
+        let likeNeedsWrapping = false;
+        let openParenFromExcludeTagClause = false;
+        finalTokens.forEach(t => {
+            const type = t.type;
+            const value = t.value;
+
+            switch(type) {
+                case "q-logic":
+                    switch(value) {
+                        case "AND":
+                            whereClauses.push("AND");
+                            break;
+                        case "OR":
+                            whereClauses.push("OR");
+                            break;
+                        case "CONTAINS":
+                            whereClauses.push("LIKE");
+                            likeNeedsWrapping = true;
+                            break;
+                        case "=":
+                            whereClauses.push("=");
+                            break;
+                        case ">":
+                            whereClauses.push(">");
+                            break;
+                        case "<":
+                            whereClauses.push("<");
+                            break;
+                        case ">=":
+                            whereClauses.push(">=");
+                            break;
+                        case "<=":
+                            whereClauses.push("<=");
+                            break;
+                        case "!=":
+                            whereClauses.push("!=");
+                            break;
+                        case "(":
+                            whereClauses.push("(");
+                            break;
+                        case ")":
+                            whereClauses.push(")");
+                            break;
+                        case "INCLUDE TAG":
+                            whereClauses.push("TAG_INCLUDES.TagName =");
+                            break;
+                        case "EXCLUDE TAG":
+                            whereClauses.push("NOT EXISTS (SELECT NULL FROM TaggedAll TAG_EXCLUDES WHERE TAG_EXCLUDES.TrackID = T.TrackID AND TAG_EXCLUDES.TagName =");
+                            openParenFromExcludeTagClause = true;
+                            break;
+                    }
+                    
+                    break;
+                case "q-metadata":
+                    let metadataValue = "";
+                    switch(value) {
+                        case "Duration":
+                            metadataValue = "T.Duration";
+                            break;
+                        case "Track Title":
+                            metadataValue = "T.TrackTitle";
+                            break;
+                        case "Artist Name":
+                            metadataValue = "REPLACE(T.Artists, ';', '')";
+                            break;
+                        case "Album Name":
+                            metadataValue = "T.AlbumTitle";
+                            break;
+                        case "File Path":
+                            metadataValue = "T.Path";
+                            break;
+                        case "Date Acquired":
+                            metadataValue = "T.DateFileCreated";
+                            break;
+                        default:
+                            if(value[0] === "@" && value[1] === "d") { //Detect the macro, which is wrapped and translated elsewhere
+                                metadataValue = value;
+                            } else {
+                                metadataValue = "'" + value.replaceAll("'", "''") + "'";
+                            }
+                            break;
+                    }
+                    if(likeNeedsWrapping) {
+                        metadataValue = `CONCAT('%',${metadataValue},'%')`;
+                        likeNeedsWrapping = false;
+                    }
+                    whereClauses.push(metadataValue);
+                    break;
+                case "q-tag":
+                    let tagValue = "'" + value.replaceAll("'", "''") + "'";
+                    if(openParenFromExcludeTagClause) {
+                        tagValue += ")";
+                    }
+                    whereClauses.push(tagValue);
+                    break;
+            }
+        });
+        finalQuery += `
+WHERE ${whereClauses.join(" ")}
+GROUP BY T.TrackID
+        `;
+        return HandleMacros(finalQuery);
+    }
 }
