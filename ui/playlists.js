@@ -501,7 +501,9 @@ function AddGuidedQueryButtons() {
         "Artist Name",
         "Album Name",
         "File Path",
-        "Date Acquired",
+        "Date File Created",
+        "Date Added",
+        "Date Last Played",
         "Raw Text",
         "DateTime"
     ];
@@ -719,7 +721,9 @@ function Guided_ConvertToSQLite(finalTokens) {
     T.AlbumTitle AS [Album Name],
     T.Duration AS [Duration],
     T.Path AS [File Path],
-    @d(T.DateFileCreated) AS [Date Acquired],
+    @d(T.DateFileCreated) AS [Date File Created],
+    @d(T.DateAdded) AS [Date Added],
+    @d(T.DateLastPlayed) AS [Date Last Played],
     STRING_AGG(TAG_UNFILTERED.TagName, ', ') AS [All Tags]
 FROM Track T
 LEFT JOIN TaggedAll TAG_UNFILTERED
@@ -802,8 +806,14 @@ JOIN TaggedAll TAG_INCLUDES
                         case "File Path":
                             metadataValue = "T.Path";
                             break;
-                        case "Date Acquired":
+                        case "Date File Created":
                             metadataValue = "T.DateFileCreated";
+                            break;
+                        case "Date Added":
+                            metadataValue = "T.DateAdded";
+                            break;
+                        case "Date Last Played":
+                            metadataValue = "T.DateLastPlayed";
                             break;
                         default:
                             if(value[0] === "@" && value[1] === "d") { //Detect the macro, which is wrapped and translated elsewhere
