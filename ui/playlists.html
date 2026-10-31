@@ -17,9 +17,6 @@
             <p>This playlist generator works in tandem with the query you input on the right side of this page. Given that query, it will look for the TrackID column that you've queried for, and gather the necessary information (filename, folder, etc.) to create a playlist for a specific platform.</p>
             <p>The generator will create a playlist using everything after the first FROM in your query, so be careful not to include any logic in the SELECT columns themselves.</p>
             <form>
-                <label for="trackid-alias">Fully Qualified TrackID Alias:</label>
-                <input type="text" id="trackid-alias" value="TrackID"></input>
-                <br/><br/>
                 <label for="playlist-type">Playlist Type:</label>
                 <select id="playlist-type">
                     <option value="-1" disabled style="display: none;">Select an Playlist file type...</option>
@@ -96,7 +93,7 @@
                             <path d="M3.204 11h9.592L8 5.519zm-.753-.659 4.796-5.48a1 1 0 0 1 1.506 0l4.796 5.48c.566.647.106 1.659-.753 1.659H3.204a1 1 0 0 1-.753-1.659"/>
                         </svg>
                 </div></div>
-                <br/>
+                <br/><br/>
                 <div id="guided-control-buttons-container">
                 </div>
                 <br/>

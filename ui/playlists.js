@@ -37,6 +37,11 @@ window.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // Prevents the cursor from moving if you are using the arrow keys to change the dropdown value
+    document.querySelector("#query-type").addEventListener("keydown", (e) => {
+        e.stopPropagation();
+    });
+
     setInterval(() => {
         if(cursorBlink) {
             document.querySelectorAll("#cursor-new svg").forEach(c => {
@@ -69,9 +74,11 @@ window.addEventListener("DOMContentLoaded", () => {
     document.querySelector("#view-raw-sql").addEventListener("click", (e) => {
         e.preventDefault();
         const guidedSql = Guided_ConvertToSQLite(Guided_ParseQuery().finalTokens);
-        document.querySelector("#query").value = guidedSql;
-        document.querySelector("#query-type").value = "raw";
-        document.querySelector("#query-type").dispatchEvent(new Event("change"));
+        if(guidedSql !== undefined) { //undefined means we failed to generate anything
+            document.querySelector("#query").value = guidedSql;
+            document.querySelector("#query-type").value = "raw";
+            document.querySelector("#query-type").dispatchEvent(new Event("change"));
+        }
     });
 
     document.querySelector("#guided-execute").addEventListener("click", (e) => {
@@ -209,19 +216,28 @@ async function HandleGeneratePlaylist() {
     
     const query = document.querySelector("#query-type").value != "guided" ? document.querySelector("#query").value : Guided_ConvertToSQLite(Guided_ParseQuery().finalTokens);
     const splitQuery = query.split(/\bFROM\b/);
-    console.log(splitQuery);
     if(splitQuery.length === 1) {
         alert("Could not find FROM clause in query. It may be empty.");
         return;
     }
     const queryConditions = query.replace(splitQuery[0], "");
-    const alias = document.querySelector("#trackid-alias").value;
+    const aliasRegex = new RegExp(/[^\s]*\bTrackID\b/);
+    const aliasResult = aliasRegex.exec(rawquery);
+    if(!aliasResult || aliasResult.length < 1) {
+        alert("Could not find TrackID in your query. It must match this Regex: /[^\s]*\bTrackID\b/")
+    }
+    const alias = aliasResult[0];
+
     const finalQuery = `
         SELECT DDBT_TRACK.TrackID, DDBT_TRACK.Path
         FROM (SELECT ${alias} ${queryConditions}) ORIG
         JOIN Track DDBT_TRACK
             ON DDBT_TRACK.TrackID = ORIG.TrackID`;
     const allResults = await HandleExecuteRawQuery(finalQuery, true);
+    if(allResults.length == 0) {
+        alert("The SQL wrapper around your query resulted in a playlist with 0 results. Probably a bug, see the developer console for the \"real\" query we ran.");
+        console.log({finalQuery});
+    }
     await HandleExecuteRawQuery(rawquery, 20);
     const replaceFrom = document.querySelector("#replace-from").value;
     const replaceTo = document.querySelector("#replace-to").value;
@@ -266,15 +282,12 @@ async function GenerateM3UPlaylist(allResults, relativeToBasePath, replaceThis, 
                 const finalRows = ["#EXTM3U"];
                 allResults.forEach((a, i) => {
                     let path = a.Path;
-                    console.log(path);
                     if(replaceThis) {
                         path = path.replace(replaceReg, withThis ?? "");
                     }
-                    console.log(path);
                     if(relativeToBasePath) {
                         path = path.replace(relativeReg, "");
                     }
-                    console.log(path);
                     finalRows.push(path);
                 });
                 output.value = finalRows.slice(0, 20).join("\n");
@@ -433,6 +446,8 @@ function AddGuidedQueryButtons() {
         "Track Title",
         "Artist Name",
         "Album Name",
+        "File Path",
+        "Date Acquired",
         "Raw Text"
     ];
     metadataButtons.forEach(b => {
@@ -524,7 +539,7 @@ function Guided_ParseQuery(onlyLookAtFirstNumTokens = -1) {
     
     let openParenthesisCount = 0;
     let expectantComparison = false;
-    let allowedTokens = GetAllowedTokens(null, openParenthesisCount > 0, expectantComparison);
+    let allowedTokens = GetAllowedTokens(null, openParenthesisCount, expectantComparison);
     let errorMessage = "";
     let erroredToken = -1;
     for(var i = 0; i < finalQuery.length; i++) {
@@ -538,8 +553,9 @@ function Guided_ParseQuery(onlyLookAtFirstNumTokens = -1) {
         if(allowedTokens.filter(at => at.type == token.type && (at.value ?? token.value) == token.value).length == 1) {
             //This token is allowed, determine parns, comparisons, next allowed tokens, then move to next
             openParenthesisCount += token.value == "(" ? 1 : 0;
+            openParenthesisCount -= token.value == ")" ? 1 : 0;
             expectantComparison = !expectantComparison ? ["CONTAINS", "=", "!=", ">=", "<=", ">", "<"].includes(token.value) : token.type == "q-metadata";
-            allowedTokens = GetAllowedTokens(token, openParenthesisCount > 0, expectantComparison);
+            allowedTokens = GetAllowedTokens(token, openParenthesisCount, expectantComparison);
         } else {
             errorMessage = `token is not allowed at location: { "${token.type}", "${token.value}" }`;
             erroredToken = i;
@@ -552,7 +568,7 @@ function Guided_ParseQuery(onlyLookAtFirstNumTokens = -1) {
     return { error: errorMessage, token: erroredToken, nextAllowedTokens: allowedTokens, finalTokens: finalQuery };
 }
 
-function GetAllowedTokens(currentToken, hasOpenParenthesis, hasExpectantComparison) {
+function GetAllowedTokens(currentToken, numOpenParenthesis, hasExpectantComparison) {
     if(currentToken == null) { //signifies when the query is empty
         return [
             {type: "q-logic", value: "INCLUDE TAG"},
@@ -563,7 +579,12 @@ function GetAllowedTokens(currentToken, hasOpenParenthesis, hasExpectantComparis
     } else if(currentToken.type == "q-logic" && ["INCLUDE TAG", "EXCLUDE TAG"].includes(currentToken.value)) {
         return [{type: "q-tag", value: null}]
     } else if(currentToken.type == "q-logic" && currentToken.value == "(") {
-        return GetAllowedTokens(null, false, false);
+        return [
+            {type: "q-logic", value: "INCLUDE TAG"},
+            {type: "q-logic", value: "EXCLUDE TAG"},
+            {type: "q-logic", value: "("},
+            {type: "q-metadata", value: null} //null denotes all values from the metadata type are valid
+        ];
     } else if(currentToken.type == "q-metadata" && !hasExpectantComparison) {
         return [
             {type: "q-logic", value: "CONTAINS"},
@@ -581,7 +602,7 @@ function GetAllowedTokens(currentToken, hasOpenParenthesis, hasExpectantComparis
             {type: "q-logic", value: "AND"},
             {type: "q-logic", value: "OR"}
         ];
-        if(hasOpenParenthesis) {
+        if(numOpenParenthesis > 0) {
             return [...alwaysAbleToComeAfterTag, {type: "q-logic", value: ")"}];
         }
         return alwaysAbleToComeAfterTag;
@@ -590,12 +611,16 @@ function GetAllowedTokens(currentToken, hasOpenParenthesis, hasExpectantComparis
             {type: "q-metadata", value: null}
         ];
     } else if(currentToken.type == "q-logic" && currentToken.value == ")") {
-        return [
+        const alwaysAbleToComeAfterParen = [
             {type: "q-logic", value: "AND"},
             {type: "q-logic", value: "OR"}
         ];
+        if(numOpenParenthesis > 0) {
+            return [...alwaysAbleToComeAfterParen, {type: "q-logic", value: ")"}];
+        }
+        return alwaysAbleToComeAfterParen;
     } else if(currentToken.type == "q-logic" && ["AND", "OR"].includes(currentToken.value)) {
-        return GetAllowedTokens(null, false, false);
+        return GetAllowedTokens(null, numOpenParenthesis, false);
     }
     return []; //probably shouldn't get here
 }
@@ -627,18 +652,21 @@ function Guided_ConvertToSQLite(finalTokens) {
     REPLACE(T.Artists, ';', '') AS [Artist Name],
     T.AlbumTitle AS [Album Name],
     T.Duration AS [Duration],
+    T.Path AS [File Path],
+    T.DateFileCreated AS [Date Acquired],
     STRING_AGG(TAG_UNFILTERED.TagName, ', ') AS [All Tags]
 FROM Track T
-JOIN TaggedAll TAG_UNFILTERED
+LEFT JOIN TaggedAll TAG_UNFILTERED
     ON TAG_UNFILTERED.TrackID = T.TrackID`;
-        const needTagAssignments = finalTokens.filter(ft => ft.type == "q-tag").length > 0;
-        if(needTagAssignments) {
+        const hasIncludeTag = finalTokens.filter(ft => ft.type == "q-logic" && ft.value == "INCLUDE TAG").length > 0;
+        if(hasIncludeTag) {
             finalQuery += `
-JOIN TaggedAll TAG
-    ON TAG.TrackID = T.TrackID`;
+JOIN TaggedAll TAG_INCLUDES
+    ON TAG_INCLUDES.TrackID = T.TrackID`;
         }
         let whereClauses = [];
         let likeNeedsWrapping = false;
+        let openParenFromExcludeTagClause = false;
         finalTokens.forEach(t => {
             const type = t.type;
             const value = t.value;
@@ -681,10 +709,11 @@ JOIN TaggedAll TAG
                             whereClauses.push(")");
                             break;
                         case "INCLUDE TAG":
-                            whereClauses.push("TAG.TagName =");
+                            whereClauses.push("TAG_INCLUDES.TagName =");
                             break;
                         case "EXCLUDE TAG":
-                            whereClauses.push("TAG.TagName !=");
+                            whereClauses.push("NOT EXISTS (SELECT NULL FROM TaggedAll TAG_EXCLUDES WHERE TAG_EXCLUDES.TrackID = T.TrackID AND TAG_EXCLUDES.TagName =");
+                            openParenFromExcludeTagClause = true;
                             break;
                     }
                     
@@ -704,6 +733,12 @@ JOIN TaggedAll TAG
                         case "Album Name":
                             metadataValue = "T.AlbumTitle";
                             break;
+                        case "File Path":
+                            metadataValue = "T.Path";
+                            break;
+                        case "Date Acquired":
+                            metadataValue = "T.DateFileCreated";
+                            break;
                         default:
                             metadataValue = "'" + value.replaceAll("'", "''") + "'"; //TODO this does not actually store the value of the raw text
                             break;
@@ -715,7 +750,11 @@ JOIN TaggedAll TAG
                     whereClauses.push(metadataValue);
                     break;
                 case "q-tag":
-                    whereClauses.push("'" + value.replaceAll("'", "''") + "'");
+                    let tagValue = "'" + value.replaceAll("'", "''") + "'";
+                    if(openParenFromExcludeTagClause) {
+                        tagValue += ")";
+                    }
+                    whereClauses.push(tagValue);
                     break;
             }
         });
