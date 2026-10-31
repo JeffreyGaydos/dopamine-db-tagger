@@ -403,7 +403,6 @@ function GetLogicColorByKey(key) {
         case "AND":
         case "OR":
             return "#0C0";
-            break;
         case "CONTAINS":
         case "=":
         case ">":
@@ -412,34 +411,48 @@ function GetLogicColorByKey(key) {
         case "<=":
         case "!=":
             return "#000";
-            break;
         case "(":
         case ")":
             return "#888";
-            break;
     }
 }
 
 function GetMetadataColorByKey(key) {
     switch(key) {
         case "Raw Text":
+        case "DateTime":
             return "#FFF";
-            break;
         default:
             return "#A00";
-            break;
     }
 }
 
 function GetMetadataEnableHTMLByKey(key) {
-    return key == "Raw Text";
+    return key == "Raw Text" || key == "DateTime";
 }
 
 function GetMetadataKeyModificationByKey(key) {
-    if(key == "Raw Text") {
-        return "<input type=\"text\" placeholder=\"raw text\" />";
+    switch(key) {
+        case "Raw Text":
+            return "<input type=\"text\" placeholder=\"raw text\" />";
+        case "DateTime":
+            return "<input type=\"text\" placeholder=\"YYYY-MM-DD hh:mm:ss\" />";
+        default:
+            return key;
     }
-    return key;
+}
+
+function GetMetadataClassesByKey(key) {
+    let additionalClass = "q-metadata";
+    switch(key) {
+        case "Raw Text":
+            additionalClass += " text";
+            break;
+        case "DateTime":
+            additionalClass += " datetime";
+            break;
+    }
+    return additionalClass;
 }
 
 function AddGuidedQueryButtons() {
@@ -489,7 +502,8 @@ function AddGuidedQueryButtons() {
         "Album Name",
         "File Path",
         "Date Acquired",
-        "Raw Text"
+        "Raw Text",
+        "DateTime"
     ];
     metadataButtons.forEach(b => {
         const newButton = CreateTag(b, GetMetadataColorByKey(b), false);
@@ -537,7 +551,7 @@ function Guided_AddToQuery(type, key, color=undefined) {
             queryPart = CreateTag(key, color, false, false, "q-tag");
             break;
         case "metadata":
-            queryPart = CreateTag(GetMetadataKeyModificationByKey(key), GetMetadataColorByKey(key), false, GetMetadataEnableHTMLByKey(key), "q-metadata");
+            queryPart = CreateTag(GetMetadataKeyModificationByKey(key), GetMetadataColorByKey(key), false, GetMetadataEnableHTMLByKey(key), GetMetadataClassesByKey(key));
             break;
         default:
             console.error("Not supposed to get here. You're calling this method incorrectly");
@@ -569,9 +583,20 @@ function Guided_ParseQuery(onlyLookAtFirstNumTokens = -1) {
     let finalQuery = [];
     queryBox.childNodes.forEach(c => {
         if(c.id != "cursor-new") {
+            let val = c.getAttribute("ev");
+            if(c.className.includes("q-metadata") && c.getAttribute("ev").includes("<input")) {
+                console.log(c.className.includes("q-metadata"));
+                if(c.className.includes("text")) {
+                    val = c.querySelector("input").value; //Use the input's value
+                    console.log(val);
+                } else if(c.className.includes("datetime")) {
+                    val = `@d('${c.querySelector("input").value}')`; //Warp the input's value in the macro
+                    console.log(val);
+                }
+            }
             finalQuery.push({
-                type: c.className.replace("tag ", ""),
-                value: c.className.replace("tag ", "") == "q-metadata" && c.getAttribute("ev").includes("<input") ? c.querySelector("input").value : c.getAttribute("ev")
+                type: c.className.replace("tag ", "").split(" ")[0], //Ignore the tag class, then only get the first class (for typed user inputs)
+                value: val
             });
         }
     });
@@ -694,7 +719,7 @@ function Guided_ConvertToSQLite(finalTokens) {
     T.AlbumTitle AS [Album Name],
     T.Duration AS [Duration],
     T.Path AS [File Path],
-    datetime(((T.DateFileCreated - 621355968000000000) / 10000000), 'unixepoch') AS [Date Acquired],
+    @d(T.DateFileCreated) AS [Date Acquired],
     STRING_AGG(TAG_UNFILTERED.TagName, ', ') AS [All Tags]
 FROM Track T
 LEFT JOIN TaggedAll TAG_UNFILTERED
@@ -781,7 +806,11 @@ JOIN TaggedAll TAG_INCLUDES
                             metadataValue = "T.DateFileCreated";
                             break;
                         default:
-                            metadataValue = "'" + value.replaceAll("'", "''") + "'"; //TODO this does not actually store the value of the raw text
+                            if(value[0] === "@" && value[1] === "d") { //Detect the macro, which is wrapped and translated elsewhere
+                                metadataValue = value;
+                            } else {
+                                metadataValue = "'" + value.replaceAll("'", "''") + "'";
+                            }
                             break;
                     }
                     if(likeNeedsWrapping) {
@@ -803,6 +832,6 @@ JOIN TaggedAll TAG_INCLUDES
 WHERE ${whereClauses.join(" ")}
 GROUP BY T.TrackID
         `;
-        return finalQuery;
+        return HandleMacros(finalQuery);
     }
 }

@@ -17,8 +17,12 @@ function SanitizeArtistName(raw) {
 function CreateTag(tagName, color, isArtist, enableHtml=false, additionalClass=undefined) {
     const tagElement = document.createElement("BUTTON");
     tagElement.classList.add("tag");
-    if(additionalClass)
-        tagElement.classList.add(additionalClass);
+    if(additionalClass) {
+        additionalClass.split(" ").forEach(c => {
+            if(c !== "")
+                tagElement.classList.add(c);
+        });
+    }
     tagElement.setAttribute("ev", tagName);
     tagElement.style.setProperty("--the-color", color);
     const redThreshold = parseInt("0xAA", 16);
