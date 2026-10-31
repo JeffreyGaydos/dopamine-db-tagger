@@ -150,9 +150,50 @@ function BackspaceToken() {
     }
 }
 
+function HandleMacros(queryString) {
+    const dateToTickRegex = new RegExp(/(?<=[\s\b])@d\('[^)]+'\)/gm);
+    const tickToDateRegex = new RegExp(/(?<=[\s\b])@d\([^)']+\)/gm);
+    const valueRegexOne = new RegExp(/(?<=@d\()[^)]+(?=\))/gm);
+    const valueRegexTwo = new RegExp(/(?<=@d\()[^)]+(?=\))/gm);
+
+    const needsToTickConversion = [];
+    const needsToDateTimeConversion = [];
+
+    let replacedQueryString = queryString;
+
+    let result = null;
+    do {
+        result = dateToTickRegex.exec(queryString);
+        if(result !== null) {
+            needsToTickConversion.push(result[0]);
+        }
+    } while(result !== null);
+    
+    result = null;
+    do {
+        result = tickToDateRegex.exec(queryString);
+        if(result) {
+            needsToDateTimeConversion.push(result[0]);
+        }
+    } while(result);
+
+    needsToTickConversion.forEach(q => {
+        const val = valueRegexOne.exec(q);
+        if(val !== null)
+            replacedQueryString = replacedQueryString.replaceAll(q, `(CAST(STRFTIME('%s', ${val[0]}) AS INT) * 10000000 + 621355968000000000)`);
+    });
+    needsToDateTimeConversion.forEach(q => {
+        const val = valueRegexTwo.exec(q);
+        if(val !== null)
+            replacedQueryString = replacedQueryString.replaceAll(q, `DATETIME(((${val[0]} - 621355968000000000) / 10000000), 'unixepoch')`);
+    });
+    return replacedQueryString;
+}
+
 async function HandleExecuteRawQuery(query, limit) {
+    const macroedQuery = HandleMacros(query);
     return new Promise((resolve) => {
-        fetch(`http://localhost:8080/api/query/raw/${encodeURIComponent(query)}/${limit}`).then((f) => {
+        fetch(`http://localhost:8080/api/query/raw/${encodeURIComponent(macroedQuery)}/${limit}`).then((f) => {
             f.json().then(r => {
                 document.querySelector("#query-results").innerHTML = "";
                 if(r.error) {
@@ -653,7 +694,7 @@ function Guided_ConvertToSQLite(finalTokens) {
     T.AlbumTitle AS [Album Name],
     T.Duration AS [Duration],
     T.Path AS [File Path],
-    T.DateFileCreated AS [Date Acquired],
+    datetime(((T.DateFileCreated - 621355968000000000) / 10000000), 'unixepoch') AS [Date Acquired],
     STRING_AGG(TAG_UNFILTERED.TagName, ', ') AS [All Tags]
 FROM Track T
 LEFT JOIN TaggedAll TAG_UNFILTERED

@@ -104,6 +104,23 @@
                 <p>Here you can query for a set of tracks using either the tag schema created by this system or the data already created by Dopamine. The SQL connection is readonly, but you could still lock up the database if you are quering it while actively using Dopamine or your browser may crash depending on the complexity of the query.</p>
                 <p>You can find the documentation for SQLite <a href="https://sqlite.org/docs.html">here</a>.</p>
                 <p>The schema of the Dopamine database and the tag schema can be found <a href="./schema.html">here</a>.</p>
+                <details>
+                    <summary>A note on date values in the Dopamine database</summary>
+                    <div style="padding-left: 20px;">
+                        <p>Dopamine stores dates as the C# tick value. SQLite does not have a built-in way to easily convert these values to human readable dates. As such, a custom "macro" has been included that can convert to and from the C# tick format and a readable date time.</p>
+                        <p>Syntax:</p>
+                        <ul>
+                            <li><pre>@d('2026-12-31 14:30:02')</pre> will convert to the C# tick equivallent value that Dopamine uses (useful for sorting/filtering): <pre style="display: inline;">639343242020000000</pre></li>
+                            <li><pre>@d(636586976464610048)</pre> will convert to a human readable string. Note that this string is <em>NOT</em> sortable: <pre style="display: inline;">2018-04-07 11:34:06</pre></li>
+                        </ul>
+                        <p>The exact code that runs these macros is as follows:</p>
+                        <ul>
+                            <li>Convert Dopamine C# Ticks to Human Readable Date: <pre style="display: inline;">DATETIME(((@DopamineDateValue - 621355968000000000) / 10000000), 'unixepoch')</pre></li>
+                            <li>Convert Human Readable Date to Dopamine C# Ticks: <pre style="display: inline;">CAST(STRFTIME('%s', @HumanReadableDateString) AS INT) * 10000000 + 621355968000000000</pre></li>
+                        </ul>
+                    </div>
+                </details>
+                <br/>
                 <div>
                     <label for="query">Raw SQLite Query:</label>
                     <br/>
