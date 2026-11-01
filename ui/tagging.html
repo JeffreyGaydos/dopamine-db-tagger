@@ -90,8 +90,12 @@
                 </svg>
             </a>
             <input name="tag" id="tag" type="text" placeholder="New or existing tag"/>
-            <label for="is-artist">Add as Artist Tag:</label>
-            <input name="is-artist" id="is-artist" disabled type="checkbox"/>
+            <label for="tag-apply-level">Apply Tag at Level:</label>
+            <select name="tag-apply-level" id="tag-apply-level">
+                <option value="track" selected>Track</option>
+                <option value="artist">Artist</option>
+                <option value="album">Album</option>
+            </select>
             <input name="color" id="color" type="color" value="#00F" />
             <a id="next-track">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-skip-forward-fill" viewBox="0 0 16 16">
@@ -108,8 +112,15 @@
         <div class="header">
             <h2>Current Tags on this Track</h2>
         </div>
-        <p>Tags outlined in red were added as artist tags. Deleting or editing those tags will result in changes to multiple tracks.</p>
+        <p>Tags listed under the "Artist" or "Album" level apply to the entire album or artist and may overlap with tags found on the track itself. Removing a tag at one level will not affect tags at another level; so removing an Artist tag called "A" will not affect the tag that's at the track level called "A", even though those are referencing the same tag. Deleting the tag itself, however, will remove the tag from all levels. Editing tags will also apply to all levels of application.</p>
+        <h3>Track-Level Tags:</h1>
         <div id="current-tags-box">
+        </div>
+        <h3>Artist-Level Tags:</h1>
+        <div id="current-artist-tags-box">
+        </div>
+        <h3>Album-Level Tags:</h1>
+        <div id="current-album-tags-box">
         </div>
         <button id="remove-all" title="Remove all tags">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
