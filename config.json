@@ -1,4 +1,5 @@
 {
     "DatabaseLocation": "C:/Users/{Username}/AppData/Roaming/Dopamine/Dopamine.db",
-    "BaseFolderPath": "C:/Users/{Username}/Music"
+    "BaseFolderPath": "C:/Users/{Username}/Music",
+    "PlaylistOutputDirectories": "C:/Users/{Username}/Music/Dopamine/Playlists"
 }

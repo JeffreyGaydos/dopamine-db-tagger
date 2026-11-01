@@ -181,7 +181,8 @@ async function RouteAPIEndpoints(url, body) {
                         case "set":
                             const realValue4 = decodeURIComponent(urlBits[4]) === "undefined" ? undefined : decodeURIComponent(urlBits[4]);
                             const realValue5 = decodeURIComponent(urlBits[5]) === "undefined" ? undefined : decodeURIComponent(urlBits[5]);
-                            const setConfigsResult = await SetConfigJSON(realValue4, realValue5);
+                            const realValue6 = decodeURIComponent(urlBits[6]) === "undefined" ? undefined : decodeURIComponent(urlBits[6]);
+                            const setConfigsResult = await SetConfigJSON(realValue4, realValue5, realValue6);
                             return {
                                 apiData: !!setConfigsResult,
                                 modified: true

@@ -21,16 +21,17 @@ export async function GetConfigJSONCached() {
 
     config = {
         "DatabaseLocation": privateConfigs.DatabaseLocation ?? defaultConfigs.DatabaseLocation,
-        "BaseFolderPath": privateConfigs.BaseFolderPath ?? defaultConfigs.BaseFolderPath
+        "BaseFolderPath": privateConfigs.BaseFolderPath ?? defaultConfigs.BaseFolderPath,
+        "PlaylistOutputDirectories": privateConfigs.PlaylistOutputDirectories ?? defaultConfigs.PlaylistOutputDirectories,
     };
     return config;
 }
 
-export async function SetConfigJSON(dbPath, mfPath) {
-    console.log(dbPath);
+export async function SetConfigJSON(dbPath, mfPath, poPath) {
     const newJson = {
         DatabaseLocation: dbPath,
-        BaseFolderPath: mfPath
+        BaseFolderPath: mfPath,
+        PlaylistOutputDirectories: poPath
     };
     await fs.writeFile("./config.user.json", JSON.stringify(newJson));
     config = undefined;
