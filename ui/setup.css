@@ -12,7 +12,7 @@ form {
     width: 80%;
 }
 
-input {
+input, textarea {
     width: 100%;
 }
 

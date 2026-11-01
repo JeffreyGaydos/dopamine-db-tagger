@@ -74,6 +74,10 @@ window.addEventListener("DOMContentLoaded", () => {
         document.querySelector("#config-mf-path").value = "C:/Users/{Username}/Music";
     });
 
+    document.querySelector("#po-config-info").addEventListener("click", () => {
+        document.querySelector("#config-po-path").value = "C:/Users/{Username}/Music/Dopamine/Playlists";
+    });
+
     document.querySelector("#config-change").addEventListener("click", (e) => {
         e.preventDefault();
         SetConfigs();
@@ -129,8 +133,9 @@ function CreateVersionSelectionOption(versionString, presentVersion, existingVer
 function PopulateExistingConfigs() {
     fetch(`http://localhost:8080/api/setup/configs/get`).then((f) => {
         f.json().then(r => {
-            document.querySelector("#config-db-path").value = r.DatabaseLocation;
-            document.querySelector("#config-mf-path").value = r.BaseFolderPath;
+            document.querySelector("#config-db-path").value = r.DatabaseLocation ?? "";
+            document.querySelector("#config-mf-path").value = r.BaseFolderPath ?? "";
+            document.querySelector("#config-po-path").value = r.PlaylistOutputDirectories ?? "";
         });
     });
 }
@@ -138,7 +143,8 @@ function PopulateExistingConfigs() {
 function SetConfigs() {
     const dbPath = document.querySelector("#config-db-path").value;
     const mfPath = document.querySelector("#config-mf-path").value;
-    fetch(`http://localhost:8080/api/setup/configs/set/${encodeURIComponent(dbPath)}/${encodeURIComponent(mfPath)}`).then((f) => {
+    const poPath = document.querySelector("#config-po-path").value;
+    fetch(`http://localhost:8080/api/setup/configs/set/${encodeURIComponent(dbPath)}/${encodeURIComponent(mfPath)}/${encodeURIComponent(poPath)}`).then((f) => {
         f.json().then(r => {
             if(r) {
                 alert("Saved configs successfully");
